@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 project(iscore_addon_pd LANGUAGES CXX)
 
+find_library(LIBPD_LIBRARY NAMES libpd pd HINTS 3rdparty/libpd/libs)
+if(NOT LIBPD_LIBRARY)
+    message("Please build 3rdparty/libpd (git submodule update --init --recursive && make) ")
+    return()
+endif()
 iscore_common_setup()
 
 # Packages
@@ -24,7 +29,6 @@ set(SRCS
 add_library(${PROJECT_NAME} ${SRCS} ${HDRS})
 
 iscore_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
-find_library(LIBPD_LIBRARY NAMES libpd pd HINTS 3rdparty/libpd/libs)
 target_link_libraries(${PROJECT_NAME} PUBLIC iscore_plugin_engine ${LIBPD_LIBRARY})
 target_include_directories(${PROJECT_NAME} PRIVATE
   3rdparty/libpd/libpd_wrapper
