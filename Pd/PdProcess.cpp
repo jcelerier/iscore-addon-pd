@@ -19,16 +19,17 @@ ProcessModel::ProcessModel(
                "     return [ obj ]; \n"
                "});";
 
-    metadata().setName(QString("PureData.%1").arg(this->id().val()));
+    metadata().setInstanceName(*this);
 }
 
 ProcessModel::ProcessModel(
         const ProcessModel& source,
         const Id<Process::ProcessModel>& id,
         QObject* parent):
-    Process::ProcessModel{source.duration(), id, Metadata<ObjectKey_k, ProcessModel>::get(), parent},
+    Process::ProcessModel{source, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent},
     m_script{source.m_script}
 {
+    metadata().setInstanceName(*this);
 }
 
 ProcessModel::~ProcessModel()
