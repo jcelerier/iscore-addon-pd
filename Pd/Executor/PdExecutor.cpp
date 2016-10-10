@@ -41,7 +41,7 @@ void ProcessExecutor::setTickFun(const QString& val)
     auto handle = libpd_openfile("ex.pd", "/tmp");
     m_dollarzero = libpd_getdollarzero(handle);
     auto mess = std::to_string(m_dollarzero) + "-tutu";
-    auto res = libpd_bind(mess.c_str());
+    /*auto res = */libpd_bind(mess.c_str());
 }
 
 ossia::state_element ProcessExecutor::state()
