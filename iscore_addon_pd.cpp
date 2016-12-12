@@ -7,10 +7,10 @@
 
 #include "z_libpd.h"
 #include "m_imp.h"
-std::pair<const CommandParentFactoryKey, CommandGeneratorMap> iscore_addon_pd::make_commands()
+std::pair<const CommandGroupKey, CommandGeneratorMap> iscore_addon_pd::make_commands()
 {
     using namespace Pd;
-    std::pair<const CommandParentFactoryKey, CommandGeneratorMap> cmds{
+    std::pair<const CommandGroupKey, CommandGeneratorMap> cmds{
         Pd::CommandFactoryName(),
                 CommandGeneratorMap{}};
 
@@ -22,9 +22,9 @@ std::pair<const CommandParentFactoryKey, CommandGeneratorMap> iscore_addon_pd::m
 
     return cmds;
 }
-std::vector<std::unique_ptr<iscore::FactoryInterfaceBase>> iscore_addon_pd::factories(
+std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
         const iscore::ApplicationContext& ctx,
-        const iscore::AbstractFactoryKey& key) const
+        const iscore::InterfaceKey& key) const
 {
     return instantiate_factories<
             iscore::ApplicationContext,

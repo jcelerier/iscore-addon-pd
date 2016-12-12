@@ -22,12 +22,12 @@ class iscore_addon_pd final:
         iscore_addon_pd();
         ~iscore_addon_pd();
 
-        std::vector<std::unique_ptr<iscore::FactoryInterfaceBase>> factories(
+        std::vector<std::unique_ptr<iscore::InterfaceBase>> factories(
                 const iscore::ApplicationContext& ctx,
-                const iscore::AbstractFactoryKey& factoryName) const override;
+                const iscore::InterfaceKey& factoryName) const override;
 
         // CommandFactory_QtInterface interface
-        std::pair<const CommandParentFactoryKey, CommandGeneratorMap> make_commands() override;
+        std::pair<const CommandGroupKey, CommandGeneratorMap> make_commands() override;
 
         iscore::Version version() const override;
         UuidKey<iscore::Plugin> key() const override;
