@@ -3,7 +3,7 @@
 #include <Process/Process.hpp>
 
 #include <Process/TimeValue.hpp>
-#include <iscore/tools/SettableIdentifier.hpp>
+#include <iscore/model/Identifier.hpp>
 #include <iscore/selection/Selection.hpp>
 #include <iscore/serialization/VisitorInterface.hpp>
 

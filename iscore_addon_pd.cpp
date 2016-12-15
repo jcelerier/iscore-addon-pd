@@ -28,12 +28,11 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
 {
     return instantiate_factories<
             iscore::ApplicationContext,
-    TL<
          FW<Process::ProcessModelFactory, Pd::ProcessFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
        //, FW<Process::InspectorWidgetDelegateFactory, JS::InspectorFactory>
         , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
-    >>(ctx, key);
+    >(ctx, key);
 }
 
 iscore_addon_pd::iscore_addon_pd()
