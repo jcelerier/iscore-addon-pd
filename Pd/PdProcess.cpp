@@ -44,16 +44,16 @@ void ProcessModel::setScript(const QString& script)
 
 }
 
-template<>
-void Visitor<Reader<DataStream>>::readFrom_impl(const Pd::ProcessModel& proc)
+template <>
+void DataStreamReader::read(const Pd::ProcessModel& proc)
 {
     m_stream << proc.m_script;
 
     insertDelimiter();
 }
 
-template<>
-void Visitor<Writer<DataStream>>::writeTo(Pd::ProcessModel& proc)
+template <>
+void DataStreamWriter::writeTo(Pd::ProcessModel& proc)
 {
     QString str;
     m_stream >> str;
@@ -62,15 +62,15 @@ void Visitor<Writer<DataStream>>::writeTo(Pd::ProcessModel& proc)
     checkDelimiter();
 }
 
-template<>
-void Visitor<Reader<JSONObject>>::readFrom_impl(const Pd::ProcessModel& proc)
+template <>
+void JSONObjectReader::read(const Pd::ProcessModel& proc)
 {
-    m_obj["Script"] = proc.script();
+    obj["Script"] = proc.script();
 }
 
-template<>
-void Visitor<Writer<JSONObject>>::writeTo(Pd::ProcessModel& proc)
+template <>
+void JSONObjectWriter::writeTo(Pd::ProcessModel& proc)
 {
-    proc.setScript(m_obj["Script"].toString());
+    proc.setScript(obj["Script"].toString());
 }
 
