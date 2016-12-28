@@ -53,7 +53,7 @@ void DataStreamReader::read(const Pd::ProcessModel& proc)
 }
 
 template <>
-void DataStreamWriter::writeTo(Pd::ProcessModel& proc)
+void DataStreamWriter::write(Pd::ProcessModel& proc)
 {
     QString str;
     m_stream >> str;
@@ -69,7 +69,7 @@ void JSONObjectReader::read(const Pd::ProcessModel& proc)
 }
 
 template <>
-void JSONObjectWriter::writeTo(Pd::ProcessModel& proc)
+void JSONObjectWriter::write(Pd::ProcessModel& proc)
 {
     proc.setScript(obj["Script"].toString());
 }
