@@ -23,7 +23,7 @@ class DeviceList;
 }
 namespace Engine { namespace Execution
 {
-class ConstraintElement;
+class ConstraintComponent;
 } }
 namespace Pd
 {
@@ -56,7 +56,7 @@ class Component final :
         COMPONENT_METADATA("78657f42-3a2a-4b80-8736-8736463442b4")
     public:
         Component(
-                Engine::Execution::ConstraintElement& parentConstraint,
+                Engine::Execution::ConstraintComponent& parentConstraint,
                 Pd::ProcessModel& element,
                 const Engine::Execution::Context& ctx,
                 const Id<iscore::Component>& id,

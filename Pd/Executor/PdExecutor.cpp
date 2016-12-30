@@ -92,7 +92,7 @@ ossia::state_element ProcessExecutor::offset(ossia::time_value off)
 }
 
 Component::Component(
-        ::Engine::Execution::ConstraintElement& parentConstraint,
+        ::Engine::Execution::ConstraintComponent& parentConstraint,
         Pd::ProcessModel& element,
         const ::Engine::Execution::Context& ctx,
         const Id<iscore::Component>& id,
