@@ -40,8 +40,15 @@ void ProcessExecutor::setTickFun(const QString& val)
 
     auto handle = libpd_openfile("ex.pd", "/tmp");
     m_dollarzero = libpd_getdollarzero(handle);
-    auto mess = std::to_string(m_dollarzero) + "-tutu";
-    /*auto res = */libpd_bind(mess.c_str());
+    auto mess = std::to_string(m_dollarzero) + "-out";
+    libpd_bind(mess.c_str());
+    libpd_set_floathook([] (const char *recv, float f) {
+      qDebug() << "received float: " << recv <<  f;
+    });
+
+    libpd_set_printhook([] (const char *recv) {
+      ossia::logger().info("Pd: {}", recv);
+    });
 }
 
 ossia::state_element ProcessExecutor::state()
@@ -58,7 +65,7 @@ ossia::state_element ProcessExecutor::state(double t)
     libpd_add_float(t);
     libpd_finish_message(mess.c_str(), "float");
     */
-    qDebug() << libpd_float(mess.c_str(), t);
+    libpd_float(mess.c_str(), t);
 
 
     float inbuf[64], outbuf[128];  // one input channel, two output channels
