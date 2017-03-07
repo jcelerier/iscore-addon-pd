@@ -1,0 +1,6 @@
+#N canvas 3074 48 380 1132 10;
+#X obj 187 73 r \$0-time;
+#X obj 187 149 s \$0-out;
+#X obj 187 112 * 2;
+#X connect 0 0 2 0;
+#X connect 2 0 1 0;
