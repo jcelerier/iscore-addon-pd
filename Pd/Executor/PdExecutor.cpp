@@ -111,3 +111,4 @@ Component::Component(
     OSSIAProcess().setTickFun(element.script());
 }
 }
+
