@@ -13,6 +13,50 @@
 #include "z_libpd.h"
 #include "m_imp.h"
 
+namespace ossia
+{
+struct glutton_connection { };
+struct needful_connection { };
+
+struct delayed_glutton_connection {
+  // delayed at the source or at the target
+};
+struct delayed_needful_connection {
+  // same
+};
+struct parallel_connection {
+};
+struct replacing_connection {
+};
+using graph_edge = eggs::variant<
+  glutton_connection,
+  needful_connection,
+  delayed_glutton_connection,
+  delayed_needful_connection,
+  parallel_connection,
+  replacing_connection>;
+
+struct audio_port {};
+struct midi_port {};
+struct value_port {};
+using port = eggs::variant<audio_port, midi_port, value_port>;
+class graph_node
+{
+  // Note : pour QtQuick : Faire View et Model qui hérite de View, puis faire binding automatique entre propriétés de la vue et du modèle
+  // Utiliser... DSPatch ? Pd ?
+  // Ports : midi, audio, value
+
+  std::vector<port> in_ports;
+  std::vector<port> out_ports;
+};
+
+
+class graph_process
+{
+  std::shared_ptr<ossia::graph_node> subProcess;
+};
+}
+
 namespace Explorer
 {
 class DeviceDocumentPlugin;
