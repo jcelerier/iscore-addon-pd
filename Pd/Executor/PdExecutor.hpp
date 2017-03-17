@@ -248,6 +248,9 @@ public:
     // We can make a proper graph with "defined" outputs.
     // But if it has "undefined" outputs, we have to make a step to check where the undefined value should go.
 
+    // Maybe in the course of execution, we should have a "sub-environment" for a given tick (map<address, value>) ?
+    // Also, the "order of evalution" graph saves us. It should be given first by the order of the constraints / processes / etc. and then adapted with the io ports.
+
     // This allows "wildcards" & stuff like this.
 
 
