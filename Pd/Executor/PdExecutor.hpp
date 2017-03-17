@@ -257,6 +257,11 @@ public:
     // Two orthogonal problems, but one stems from the another.
     // We want to have temporal dataflows. We want this flow to control outisde parameters. Due to the temporal nature,
     // some nodes of the graph might not always be available. So what must we do ? And what new opportunities does this bring ?
+
+    // We are trying to do two things : first make a good run-time algorithm (ran at each tick, like i-score's current message algorithm)
+    // and then try to optimize by doing most of the cabling before run-time. (or at each change of the graph).
+
+    // Note : clock accuracy : see LibAudioStream.
     for(graph_vertex_t vtx : topo_order)
     {
       const auto& node = user_graph[vtx];
