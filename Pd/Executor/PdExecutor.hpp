@@ -19,6 +19,8 @@
 #include <ossia/editor/state/state_element.hpp>
 #include <boost/graph/topological_sort.hpp>
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/container/flat_set.hpp>
+#include <boost/bimap.hpp>
 namespace ossia
 {
 struct glutton_connection { };
@@ -60,6 +62,16 @@ struct value_port {
 class graph_node;
 struct graph_edge
 {
+  graph_edge(connection c, std::shared_ptr<port> in, std::shared_ptr<port> out, std::shared_ptr<graph_node> in_node, std::shared_ptr<graph_node> out_node):
+    con{c},
+    in{in},
+    out{out},
+    in_node{in_node},
+    out_node{out_node}
+  {
+
+  }
+
   connection con;
   std::shared_ptr<port> in;
   std::shared_ptr<port> out;
@@ -73,8 +85,11 @@ auto make_port(Args&&... args)
   return std::make_shared<port>(T{std::forward<Args>(args)...});
 }
 
+using ports = std::vector<std::shared_ptr<port>>;
+
 class graph_node
 {
+protected:
   // Note : pour QtQuick : Faire View et Model qui hérite de View, puis faire binding automatique entre propriétés de la vue et du modèle
   // Utiliser... DSPatch ? Pd ?
   // Ports : midi, audio, value
@@ -92,10 +107,6 @@ public:
 
   graph_node()
   {
-    in_ports.push_back(make_port<audio_port>());
-    in_ports.push_back(make_port<value_port>());
-
-    out_ports.push_back(make_port<audio_port>());
   }
 
   virtual void event()
@@ -113,56 +124,103 @@ public:
     previous_time = time;
     time = d;
   }
+
+  const ports& inputs() const { return in_ports; }
+  const ports& outputs() const { return out_ports; }
 };
 
+template<typename T>
+using set = boost::container::flat_set<T>;
+template<typename T, typename U>
+using bimap = boost::bimap<T, U>;
 class graph : public ossia::time_process
 {
-  std::vector<std::shared_ptr<graph_node>> nodes;
-  std::vector<std::shared_ptr<graph_edge>> edges;
-
-  std::set<std::shared_ptr<graph_node>> enabled_nodes;
-
-  std::vector<int> delay_ringbuffers;
-
-  using graph_impl = boost::adjacency_list<
+  using graph_t = boost::adjacency_list<
     boost::vecS,
     boost::vecS,
     boost::directedS,
     std::shared_ptr<graph_node>,
     std::shared_ptr<graph_edge>>;
 
-  graph_impl user_graph;
+  using graph_vertex_t = graph_t::vertex_descriptor;
+  using graph_edge_t = graph_t::edge_descriptor;
+
+  using node_bimap = bimap<graph_vertex_t, std::shared_ptr<graph_node>>;
+  using edge_bimap = bimap<graph_edge_t, std::shared_ptr<graph_edge>>;
+  using node_bimap_v = node_bimap::value_type;
+  using edge_bimap_v = edge_bimap::value_type;
+
+  node_bimap nodes;
+  edge_bimap edges;
+
+  set<std::shared_ptr<graph_node>> enabled_nodes;
+
+  std::vector<int> delay_ringbuffers;
+
+
+  graph_t user_graph;
 
   std::vector<std::function<void()>> call_list;
 public:
+  void add_node(const std::shared_ptr<graph_node>& n)
+  {
+    nodes.insert(node_bimap_v{boost::add_vertex(n, user_graph), n});
+    reconfigure();
+  }
+
+  void remove_node(const std::shared_ptr<graph_node>& n)
+  {
+    auto it = nodes.right.find(n);
+    if(it != nodes.right.end())
+    {
+      boost::remove_vertex(it->second, user_graph);
+      nodes.right.erase(it);
+      reconfigure();
+    }
+  }
+
   void enable(const std::shared_ptr<graph_node>& n)
   {
     enabled_nodes.insert(n);
-
     reconfigure();
   }
 
   void disable(const std::shared_ptr<graph_node>& n)
   {
     enabled_nodes.erase(n);
-
     reconfigure();
   }
 
   void connect(const std::shared_ptr<graph_edge>& edge)
   {
+    auto it1 = nodes.right.find(edge->in_node);
+    auto it2 = nodes.right.find(edge->out_node);
+    if(it1 != nodes.right.end() && it2 != nodes.right.end())
+    {
+      auto res = boost::add_edge(it1->second, it2->second, edge, user_graph);
+      if(res.second)
+      {
+        edges.insert(edge_bimap_v{res.first, edge});
+      }
+    }
 
+    reconfigure();
   }
 
   void disconnect(const std::shared_ptr<graph_edge>& edge)
   {
-
+    auto it = edges.right.find(edge);
+    if(it != edges.right.end())
+    {
+      boost::remove_edge(it->second, user_graph);
+      reconfigure();
+    }
   }
 
   void reconfigure()
   {
     call_list.clear();
-    std::deque<std::size_t> topo_order;
+    std::deque<graph_vertex_t> topo_order;
     try {
       boost::topological_sort(user_graph, std::front_inserter(topo_order));
     }
@@ -171,13 +229,29 @@ public:
       return;
     }
 
-    for(std::size_t vtx : topo_order)
+    // topo_order contains a list of connected things starting from the root and going through the leaves
+    // now how to handle nodes with the same parameters without specification ?
+
+    // two kinds of edges : explicit edges and implicit edges
+
+    // note : implicit edges must be checked at runtime (imagine a js process that writes to random adresses on each tick)
+    // this also means that besides the policy, the adresses should have a default behaviour set.
+    // Or maybe it should be per node or per port ?
+
+    // Maybe we should have the "connection graph", between ports, and the "node graph" where the user explicitely says
+    // he wants a process to be executed before another. And a check that both aren't contradictory.
+
+    // What we cannot do, however, is know automatically which process reads which address : it works only for outbound ports.
+    // Inbound ports have to be specified
+    for(graph_vertex_t vtx : topo_order)
     {
       const auto& node = user_graph[vtx];
       call_list.push_back([=] {
         node->run();
       });
     }
+
+    // So
   }
 
   state_element offset(time_value) override
@@ -195,6 +269,43 @@ public:
   }
 };
 
+class node_mock : public graph_node {
+
+public:
+  node_mock(ports in, ports out)
+  {
+    in_ports = std::move(in);
+    out_ports = std::move(out);
+  }
+};
+
+class graph_mock
+{
+  graph g;
+public:
+  graph_mock()
+  {
+    auto n1 = std::make_shared<node_mock>(ports{make_port<value_port>()}, ports{make_port<value_port>()});
+    auto n2 = std::make_shared<node_mock>(ports{make_port<value_port>()}, ports{make_port<value_port>()});
+    auto n3 = std::make_shared<node_mock>(ports{make_port<value_port>()}, ports{make_port<value_port>()});
+    auto n4 = std::make_shared<node_mock>(ports{make_port<value_port>(), make_port<value_port>()}, ports{make_port<value_port>()});
+
+    g.add_node(n1);
+    g.add_node(n2);
+    g.add_node(n3);
+    g.add_node(n4);
+
+    auto c1 = std::make_shared<graph_edge>(connection{glutton_connection{}}, n1->outputs()[0], n2->inputs()[0], n1, n2);
+    auto c2 = std::make_shared<graph_edge>(connection{glutton_connection{}}, n1->outputs()[0], n3->inputs()[0], n1, n3);
+    auto c3 = std::make_shared<graph_edge>(connection{glutton_connection{}}, n2->outputs()[0], n4->inputs()[0], n2, n4);
+    auto c4 = std::make_shared<graph_edge>(connection{glutton_connection{}}, n3->outputs()[0], n4->inputs()[1], n3, n4);
+
+    g.connect(c1);
+    g.connect(c2);
+    g.connect(c3);
+    g.connect(c4);
+  }
+};
 
 
 class graph_process : public ossia::time_process
