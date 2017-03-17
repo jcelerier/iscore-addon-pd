@@ -242,7 +242,18 @@ public:
     // he wants a process to be executed before another. And a check that both aren't contradictory.
 
     // What we cannot do, however, is know automatically which process reads which address : it works only for outbound ports.
-    // Inbound ports have to be specified
+    // Inbound ports have to be specified. Or maybe we can have an evaluation step where the "undefined" inputs are asked "would you accept this address" ?
+
+
+    // We can make a proper graph with "defined" outputs.
+    // But if it has "undefined" outputs, we have to make a step to check where the undefined value should go.
+
+    // This allows "wildcards" & stuff like this.
+
+
+    // Two orthogonal problems, but one stems from the another.
+    // We want to have temporal dataflows. We want this flow to control outisde parameters. Due to the temporal nature,
+    // some nodes of the graph might not always be available. So what must we do ? And what new opportunities does this bring ?
     for(graph_vertex_t vtx : topo_order)
     {
       const auto& node = user_graph[vtx];
