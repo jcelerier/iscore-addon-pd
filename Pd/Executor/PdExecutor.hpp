@@ -21,8 +21,25 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/container/flat_set.hpp>
 #include <boost/bimap.hpp>
+#include <boost/functional/hash.hpp>
+namespace std
+{
+template<typename T>
+class hash<std::pair<T*, T*>>
+{
+public:
+  std::size_t operator()(const std::pair<T*, T*>& p) const
+  {
+    std::size_t seed = 0;
+    boost::hash_combine(seed, p.first);
+    boost::hash_combine(seed, p.second);
+    return seed;
+  }
+};
+}
 namespace ossia
 {
+
 struct glutton_connection { };
 struct needful_connection { };
 struct temporal_glutton_connection { };
@@ -111,6 +128,8 @@ protected:
 
   double previous_time{};
   double time{};
+
+  bool m_enabled{};
 public:
   virtual ~graph_node()
   {
@@ -120,6 +139,9 @@ public:
   graph_node()
   {
   }
+
+  bool enabled() const { return m_enabled; }
+  void set_enabled(bool b) { m_enabled = b; }
 
   virtual void event(time_value date, ossia::state_element& st)
   {
@@ -179,6 +201,10 @@ class graph : public ossia::time_process
   graph_t user_graph;
 
   std::vector<std::function<void(execution_state&)>> call_list;
+
+  std::unordered_map<std::pair<graph_node*, graph_node*>, connection> connection_types;
+
+  time_value current_time{};
 public:
   void add_node(const std::shared_ptr<graph_node>& n)
   {
@@ -200,12 +226,14 @@ public:
   void enable(const std::shared_ptr<graph_node>& n)
   {
     enabled_nodes.insert(n);
+    n->set_enabled(true);
     reconfigure();
   }
 
   void disable(const std::shared_ptr<graph_node>& n)
   {
     enabled_nodes.erase(n);
+    n->set_enabled(false);
     reconfigure();
   }
 
@@ -292,6 +320,7 @@ public:
     // some nodes of the graph might not always be available. So what must we do ? And what new opportunities does this bring ?
 
     // Give example of video filter : first change brightness, then from t=5 to t=25 change contrast
+
   }
 
   state_element offset(time_value) override
@@ -299,11 +328,36 @@ public:
     return {};
   }
 
+  void glutton_exec()
+  {
+
+  }
+
+
   state_element state() override
   {
     // First algorithm : doing it by hand.
 
+    // We have to have an order between processes at some point.
 
+
+    // Note : the graph traversal has to be done by hand, since it depends on the output value of each node.
+
+    // Think of the case : [ /b -> f1 -> ...] in glutton mode : if there is no other node to get /b from we have to get it from the tree.
+
+    // How to do it in the implicit and explicit case ? Implicit : acceptedData() ? it's simple for adresses, but what about audio, etc... ?
+    // Between two calls : look for all the nodes that are after this one and are able to accept the address / etc.
+
+    // The data graph maybe have to be hierarchical, too ? this way for instance we can mix sounds only at a given level.
+
+    // Propagate :
+    // - Input Data
+    // - Tick
+    // - Find the next set of nodes that will be called
+    // - Input Data
+    // - Tick
+
+    // First : find the "roots" of the graph, and call on them with an empty execution state.
     /*
     execution_state s;
     // Pull the graph
@@ -311,6 +365,11 @@ public:
       call(s);
 
     */
+
+    // We have to define a "sum operation" for each kinde of data we want to manipulate.
+    // "parameters" : replace
+    // midi : add notes, replace CCs
+    // audio : sum
     return {};
 
   }
