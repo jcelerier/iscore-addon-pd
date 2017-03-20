@@ -25,7 +25,7 @@ namespace ossia
 {
 struct glutton_connection { };
 struct needful_connection { };
-
+struct temporal_glutton_connection { };
 struct delayed_glutton_connection {
   // delayed at the source or at the target
 };
@@ -36,13 +36,19 @@ struct parallel_connection {
 };
 struct replacing_connection {
 };
+
+// An explicit dependency required by the composer.
+struct dependency_connection {
+};
+
 using connection = eggs::variant<
   glutton_connection,
   needful_connection,
   delayed_glutton_connection,
   delayed_needful_connection,
   parallel_connection,
-  replacing_connection>;
+  replacing_connection,
+  dependency_connection>;
 
 struct audio_port;
 struct midi_port;
@@ -79,6 +85,12 @@ struct graph_edge
   std::shared_ptr<graph_node> out_node;
 };
 
+struct execution_state
+{
+  ossia::state state;
+
+};
+
 template<typename T, typename... Args>
 auto make_port(Args&&... args)
 {
@@ -109,12 +121,17 @@ public:
   {
   }
 
-  virtual void event()
+  virtual void event(time_value date, ossia::state_element& st)
   {
 
   }
 
-  virtual void run()
+  virtual bool consumes(execution_state&)
+  {
+    return false;
+  }
+
+  virtual void run(execution_state& e)
   {
 
   }
@@ -128,6 +145,7 @@ public:
   const ports& inputs() const { return in_ports; }
   const ports& outputs() const { return out_ports; }
 };
+
 
 template<typename T>
 using set = boost::container::flat_set<T>;
@@ -160,7 +178,7 @@ class graph : public ossia::time_process
 
   graph_t user_graph;
 
-  std::vector<std::function<void()>> call_list;
+  std::vector<std::function<void(execution_state&)>> call_list;
 public:
   void add_node(const std::shared_ptr<graph_node>& n)
   {
@@ -253,24 +271,27 @@ public:
 
     // This allows "wildcards" & stuff like this.
 
+    // We are trying to do two things : first make a good run-time algorithm (ran at each tick, like i-score's current message algorithm)
+    // and then try to optimize by doing most of the cabling before run-time. (or at each change of the graph).
+
+    // Note : clock accuracy : see LibAudioStream. while(command in stream) { apply(command) }
+    // we have to give the ability of graph nodes to give dates to messages
+    for(graph_vertex_t vtx : topo_order)
+    {
+      const auto& node = user_graph[vtx];
+      call_list.push_back([=] (execution_state& e) {
+        node->run(e);
+      });
+    }
+
+    // To put in the article :
+
 
     // Two orthogonal problems, but one stems from the another.
     // We want to have temporal dataflows. We want this flow to control outisde parameters. Due to the temporal nature,
     // some nodes of the graph might not always be available. So what must we do ? And what new opportunities does this bring ?
 
-    // We are trying to do two things : first make a good run-time algorithm (ran at each tick, like i-score's current message algorithm)
-    // and then try to optimize by doing most of the cabling before run-time. (or at each change of the graph).
-
-    // Note : clock accuracy : see LibAudioStream.
-    for(graph_vertex_t vtx : topo_order)
-    {
-      const auto& node = user_graph[vtx];
-      call_list.push_back([=] {
-        node->run();
-      });
-    }
-
-    // So
+    // Give example of video filter : first change brightness, then from t=5 to t=25 change contrast
   }
 
   state_element offset(time_value) override
@@ -280,11 +301,18 @@ public:
 
   state_element state() override
   {
+    // First algorithm : doing it by hand.
+
+
+    /*
+    execution_state s;
     // Pull the graph
     for(auto& call : call_list)
-      call();
+      call(s);
 
+    */
     return {};
+
   }
 };
 
