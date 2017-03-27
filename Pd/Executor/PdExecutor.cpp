@@ -10,6 +10,7 @@
 #include <ossia/editor/state/state.hpp>
 #include <ossia/editor/scenario/time_constraint.hpp>
 #include <Pd/PdProcess.hpp>
+#include "Dataflow.hpp"
 
 
 namespace Pd
