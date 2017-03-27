@@ -9,7 +9,8 @@
 #include <iscore/document/DocumentContext.hpp>
 #include <iscore/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
-
+#include <Device/Protocol/DeviceList.hpp>
+#include <z_libpd.h>
 namespace Pd
 {
 class ProcessModel;
