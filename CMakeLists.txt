@@ -30,10 +30,12 @@ add_library(${PROJECT_NAME} ${SRCS} ${HDRS})
 
 iscore_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
 target_link_libraries(${PROJECT_NAME} PUBLIC iscore_plugin_engine ${LIBPD_LIBRARY})
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} PUBLIC
   3rdparty/libpd/libpd_wrapper
   3rdparty/libpd/pure-data/src
   )
 
 setup_iscore_plugin(${PROJECT_NAME})
 
+
+setup_iscore_tests(Tests)
