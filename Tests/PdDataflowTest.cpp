@@ -3,7 +3,13 @@
 #include <z_libpd.h>
 #include <ossia/network/generic/generic_device.hpp>
 #include <ossia/network/local/local.hpp>
+#include <ossia/editor/scenario/scenario.hpp>
+#include <ossia/editor/scenario/time_node.hpp>
+#include <ossia/editor/scenario/time_constraint.hpp>
+#include <ossia/editor/scenario/time_event.hpp>
+#include <ossia/editor/scenario/time_value.hpp>
 #include <sndfile.hh>
+#include <thread>
 class pd_graph_node final :
     public ossia::graph_node
 {
@@ -23,6 +29,7 @@ public:
     , m_outputs{outputs}
     , m_inmess{inmess}
     , m_outmess{outmess}
+    , m_file{file}
   {
 
     m_currentInstance = nullptr;
@@ -31,7 +38,6 @@ public:
     for(int i = 0; i < outputs ; i++)
       out_ports.push_back(ossia::make_outlet<ossia::audio_port>());
 
-    // TODO add $0 to everyone
     {
       m_instance = pdinstance_new();
       pd_setinstance(m_instance);
@@ -191,6 +197,8 @@ public:
       ap->samples.resize(ap->samples.size() + 1);
 
       std::copy_n(outbuf.begin() + i * bs, bs, ap->samples.back().begin());
+      if(std::all_of(outbuf.begin() + i * bs, outbuf.begin() + (1+i) * bs, [] (auto f) { return f == 0.f; }))
+        qDebug() << "empty " << m_file.c_str();
     }
   }
 
@@ -199,6 +207,7 @@ public:
 
   int m_inputs{}, m_outputs{};
   std::vector<std::string> m_inmess, m_outmess;
+  std::string m_file;
 };
 
 pd_graph_node* pd_graph_node::m_currentInstance;
@@ -233,7 +242,8 @@ private slots:
     auto& r_node = create_node(dev.getRootNode(), "/r");
     auto r_addr = r_node.createAddress(ossia::val_type::IMPULSE);
 
-    ossia::graph g;
+    auto graph = std::make_shared<ossia::graph>();
+    ossia::graph& g = *graph;
     using string_vec = std::vector<std::string>;
     auto f1 = std::make_shared<pd_graph_node>("gen1.pd", 0, 0, string_vec{}, string_vec{"out-1"});
     auto f1_2 = std::make_shared<pd_graph_node>("gen1.pd", 0, 0, string_vec{}, string_vec{"out-1"});
@@ -274,7 +284,7 @@ private slots:
 
     f5_2->in_ports[0]->address = l_addr;
     f5_2->in_ports[1]->address = r_addr;
-    f5->in_ports[2]->address = filt_addr;
+    f5_2->in_ports[2]->address = filt_addr;
     f5_2->out_ports[0]->address = l_addr;
     f5_2->out_ports[1]->address = r_addr;
 
@@ -285,13 +295,8 @@ private slots:
     g.connect(make_edge(immediate_glutton_connection{}, f4->out_ports[0], f5->in_ports[0], f4, f5));
     g.connect(make_edge(immediate_glutton_connection{}, f4->out_ports[1], f5->in_ports[1], f4, f5));
 
-    //g.connect(make_edge(delayed_strict_connection{}, f4->out_ports[0], f5_2->in_ports[0], f4, f5_2));
-    //g.connect(make_edge(delayed_strict_connection{}, f4->out_ports[1], f5_2->in_ports[1], f4, f5_2));
-
-    f1->set_enabled(true);
-    f3->set_enabled(true);
-    f4->set_enabled(true);
-    f5->set_enabled(true);
+    g.connect(make_edge(delayed_strict_connection{}, f4->out_ports[0], f5_2->in_ports[0], f4, f5_2));
+    g.connect(make_edge(delayed_strict_connection{}, f4->out_ports[1], f5_2->in_ports[1], f4, f5_2));
 
     std::vector<float> samples;
 
@@ -299,8 +304,12 @@ private slots:
     auto copy_samples = [&] {
       auto it_l = st.localState.find(l_addr);
       auto it_r = st.localState.find(r_addr);
-      QVERIFY(it_l != st.localState.end());
-      QVERIFY(it_r != st.localState.end());
+      if(it_l == st.localState.end() || it_r == st.localState.end())
+      {
+        // Just copy silence
+        samples.resize(samples.size() + 128);
+        return;
+      }
 
       auto audio_l = it_l->second.target<audio_port>();
       auto audio_r = it_r->second.target<audio_port>();
@@ -323,14 +332,110 @@ private slots:
       }
     };
 
-    for(int i = 0; i < 10000; i++)
+    // Create an ossia scenario
+    auto main_start_node = std::make_shared<time_node>();
+    auto main_end_node = std::make_shared<time_node>();
+
+    // create time_events inside TimeNodes and make them interactive to the /play address
+    auto main_start_event = *(main_start_node->emplace(main_start_node->timeEvents().begin(), {}));
+    auto main_end_event = *(main_end_node->emplace(main_end_node->timeEvents().begin(), {}));
+
+    const time_value granul{1000. * 64. / 44100.};
+    // create the main time_constraint
+
+    auto cb = [] (time_value t0, time_value, const state&) {
+    };
+
+    auto cb_2 = [] (time_value t0, time_value, const state&) {
+      //std::cerr << "constraint ticking" << (double)t0;
+    };
+    auto main_constraint = std::make_shared<time_constraint>(
+                             cb,
+                             *main_start_event,
+                             *main_end_event,
+                             20000_tv,
+                             20000_tv,
+                             20000_tv);
+
+    auto main_scenario_ptr = std::make_unique<scenario>();
+    scenario& main_scenario = *main_scenario_ptr;
+    main_constraint->addTimeProcess(std::move(main_scenario_ptr));
+
+    auto make_constraint = [&] (auto time, auto s, auto e)
     {
+      time_value tv{double{time}};
+      auto cst = std::make_shared<time_constraint>(cb_2, *s, *e, tv, tv, tv);
+      cst->setGranularity(granul);
+      s->nextTimeConstraints().push_back(cst);
+      e->previousTimeConstraints().push_back(cst);
+      main_scenario.addTimeConstraint(cst);
+      return cst;
+    };
+
+    std::vector<std::shared_ptr<time_node>> t(15); std::generate(t.begin(), t.end(), [&] {
+      auto tn = std::make_shared<time_node>();
+      main_scenario.addTimeNode(tn);
+      return tn;
+    });
+
+    t[0] = main_scenario.getStartTimeNode();
+
+    std::vector<std::shared_ptr<time_event>> e(15);
+    for(int i = 0; i < t.size(); i++) e[i] = *t[i]->emplace(t[i]->timeEvents().begin(), {});
+
+    std::vector<std::shared_ptr<time_constraint>> c(14);
+    c[0] = make_constraint(1000, e[0], e[1]);
+    c[1] = make_constraint(2000, e[1], e[2]);
+    c[2] = make_constraint(1500, e[2], e[3]);
+    c[3] = make_constraint(1000, e[3], e[4]);
+    c[4] = make_constraint(500, e[4], e[5]);
+    c[5] = make_constraint(3000, e[5], e[6]);
+
+    c[6] = make_constraint(500, e[0], e[7]);
+    c[7] = make_constraint(10000, e[7], e[8]);
+
+    c[8] = make_constraint(3000, e[0], e[9]);
+    c[9] = make_constraint(4000, e[9], e[10]);
+
+    c[10] = make_constraint(1000, e[9], e[11]);
+    c[11] = make_constraint(3000, e[11], e[12]);
+    c[12] = make_constraint(1000, e[12], e[13]);
+    c[13] = make_constraint(3000, e[13], e[14]);
+
+
+    c[1]->addTimeProcess(std::make_shared<graph_process>(graph, f1));
+    c[3]->addTimeProcess(std::make_shared<graph_process>(graph, f2));
+    c[5]->addTimeProcess(std::make_shared<graph_process>(graph, f1_2));
+
+    c[7]->addTimeProcess(std::make_shared<graph_process>(graph, f3));
+
+    c[9]->addTimeProcess(std::make_shared<graph_process>(graph, f4));
+
+    c[11]->addTimeProcess(std::make_shared<graph_process>(graph, f5));
+    c[13]->addTimeProcess(std::make_shared<graph_process>(graph, f5_2));
+
+
+    main_constraint->setDriveMode(ossia::clock::DriveMode::EXTERNAL);
+    main_constraint->setGranularity(time_value(1000. * 64. / 44100.));
+    main_constraint->setSpeed(1.0);
+
+    main_constraint->offset(0.000000001_tv);
+    main_constraint->start();
+
+    for(int i = 0; i < 15  * 44100. / 64.; i++)
+    {
+      const ossia::time_value rate{1000000. * 64. / 44100.};
+      main_constraint->tick(rate);
+
       st = g.exec_state();
       copy_samples();
-    }
+
+      std::this_thread::sleep_for(std::chrono::microseconds(int64_t(1000000. * 64. / 44100.)));
+
+     }
 
     qDebug() << samples.size();
-     QVERIFY(samples.size() > 0);
+    QVERIFY(samples.size() > 0);
     SndfileHandle file("/tmp/out.wav", SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_PCM_16, 2, 44100);
     file.write(samples.data(), samples.size());
     file.writeSync();
