@@ -574,7 +574,7 @@ private slots:
       const ossia::time_value rate{1000000. * 64. / 44100.};
       main_constraint->tick(rate);
 
-      st = g.exec_state();
+      st = g.state();
       copy_samples();
 
       std::this_thread::sleep_for(std::chrono::microseconds(int64_t(1000000. * 64. / 44100.)));
