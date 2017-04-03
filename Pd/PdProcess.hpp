@@ -1,18 +1,21 @@
 #pragma once
 #include <Pd/PdMetadata.hpp>
+#include <Pd/DataflowProcess.hpp>
 #include <Process/Process.hpp>
-
+#include <Process/LayerModel.hpp>
+#include <Process/WidgetLayer/WidgetProcessFactory.hpp>
+#include <Process/WidgetLayer/WidgetLayerPresenter.hpp>
+#include <Process/WidgetLayer/WidgetLayerView.hpp>
 #include <Process/TimeValue.hpp>
 #include <iscore/model/Identifier.hpp>
 #include <iscore/selection/Selection.hpp>
 #include <iscore/serialization/VisitorInterface.hpp>
-
 class DataStream;
 class JSONObject;
 
 namespace Pd
 {
-class ProcessModel final : public Process::ProcessModel
+class ProcessModel final : public Dataflow::ProcessModel
 {
         ISCORE_SERIALIZE_FRIENDS
         MODEL_METADATA_IMPL(Pd::ProcessModel)
@@ -32,7 +35,7 @@ class ProcessModel final : public Process::ProcessModel
         explicit ProcessModel(
                 Impl& vis,
                 QObject* parent) :
-            Process::ProcessModel{vis, parent}
+            Dataflow::ProcessModel{vis, parent}
         {
             vis.writeTo(*this);
         }
@@ -49,4 +52,5 @@ class ProcessModel final : public Process::ProcessModel
     private:
         QString m_script;
 };
+
 }

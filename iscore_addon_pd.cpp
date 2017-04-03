@@ -1,7 +1,10 @@
 #include "iscore_addon_pd.hpp"
 #include <Pd/PdFactory.hpp>
+#include <Pd/PdLayer.hpp>
 #include <Pd/Executor/PdExecutor.hpp>
 #include <Pd/Commands/PdCommandFactory.hpp>
+#include <Pd/Inspector/PdInspectorFactory.hpp>
+#include <Pd/ApplicationPlugin.hpp>
 #include <iscore/plugins/customfactory/FactorySetup.hpp>
 #include <iscore_addon_pd_commands_files.hpp>
 
@@ -10,6 +13,7 @@
 std::pair<const CommandGroupKey, CommandGeneratorMap> iscore_addon_pd::make_commands()
 {
     using namespace Pd;
+    using namespace Dataflow;
     std::pair<const CommandGroupKey, CommandGeneratorMap> cmds{
         Pd::CommandFactoryName(),
                 CommandGeneratorMap{}};
@@ -30,8 +34,8 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
             iscore::ApplicationContext,
          FW<Process::ProcessModelFactory, Pd::ProcessFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
-       //, FW<Process::InspectorWidgetDelegateFactory, JS::InspectorFactory>
         , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
+        , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
     >(ctx, key);
 }
 
@@ -43,6 +47,14 @@ iscore_addon_pd::iscore_addon_pd()
     libpd_set_printhook([] (const char *s) { qDebug() << "string: " << s; });
     libpd_set_floathook([] (const char *s, float x)  { qDebug() << "float: " << s << x; });
 }
+
+iscore::GUIApplicationPlugin*
+iscore_addon_pd::make_applicationPlugin(
+        const iscore::GUIApplicationContext& app)
+{
+    return new Dataflow::ApplicationPlugin{app};
+}
+
 
 iscore_addon_pd::~iscore_addon_pd()
 {

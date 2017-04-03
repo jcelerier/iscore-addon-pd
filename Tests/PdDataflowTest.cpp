@@ -91,34 +91,34 @@ public:
       add_dzero(mess);
 
     // Create correct I/Os
-    in_ports.reserve(inputs + m_inmess.size() + int(midi_in));
+    m_inlets.reserve(inputs + m_inmess.size() + int(midi_in));
     for(std::size_t i = 0U; i < inputs ; i++)
-      in_ports.push_back(ossia::make_inlet<ossia::audio_port>());
+      m_inlets.push_back(ossia::make_inlet<ossia::audio_port>());
     for(auto& str : m_inmess)
     {
-      in_ports.push_back(ossia::make_inlet<ossia::value_port>());
+      m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
     }
 
-    out_ports.reserve(outputs + m_outmess.size()+ int(midi_out));
+    m_outlets.reserve(outputs + m_outmess.size()+ int(midi_out));
     for(std::size_t i = 0U; i < outputs ; i++)
-      out_ports.push_back(ossia::make_outlet<ossia::audio_port>());
+      m_outlets.push_back(ossia::make_outlet<ossia::audio_port>());
     for(auto& mess : m_outmess)
     {
       libpd_bind(mess.c_str());
-      out_ports.push_back(ossia::make_outlet<ossia::value_port>());
+      m_outlets.push_back(ossia::make_outlet<ossia::value_port>());
     }
 
     if(midi_in)
     {
       auto mid = ossia::make_inlet<ossia::midi_port>();
       m_midi_inlet = mid->data.target<ossia::midi_port>();
-      in_ports.push_back(std::move(mid));
+      m_inlets.push_back(std::move(mid));
     }
     if(midi_out)
     {
       auto mid = ossia::make_outlet<ossia::midi_port>();
       m_midi_outlet = mid->data.target<ossia::midi_port>();
-      out_ports.push_back(std::move(mid));
+      m_outlets.push_back(std::move(mid));
     }
 
     // Set-up message callbacks
@@ -214,7 +214,7 @@ private:
     ossia::string_view s = str;
     auto it = ossia::find(m_outmess, s);
     if(it != m_outmess.end())
-      return out_ports[std::distance(m_outmess.begin(), it) + m_outputs].get();
+      return m_outlets[std::distance(m_outmess.begin(), it) + m_outputs].get();
     return nullptr;
   }
 
@@ -260,7 +260,7 @@ private:
     // Copy audio inputs
     for(std::size_t i = 0U; i < m_inputs; i++)
     {
-      auto ap = in_ports[i]->data.target<ossia::audio_port>();
+      auto ap = m_inlets[i]->data.target<ossia::audio_port>();
       const auto pos = i * bs;
       if(!ap->samples.empty())
       {
@@ -273,9 +273,8 @@ private:
     if(m_midi_inlet)
     {
       auto& dat = m_midi_inlet->messages;
-      while(dat.size() > 0)
+      for(const auto& mess : dat)
       {
-        mm::MidiMessage mess = dat.front();
         switch(mess.getMessageType())
         {
           case mm::MessageType::NOTE_OFF:
@@ -303,23 +302,22 @@ private:
           default:
             break;
         }
-
-        dat.pop_front();
       }
+
+      dat.clear();
     }
 
     // Copy message inputs
-    for(std::size_t i = m_inputs; i < in_ports.size(); ++i)
+    for(std::size_t i = m_inputs; i < m_inlets.size(); ++i)
     {
-      auto& dat = in_ports[i]->data.target<ossia::value_port>()->data;
+      auto& dat = m_inlets[i]->data.target<ossia::value_port>()->data;
 
       auto mess = m_inmess[i - m_inputs].c_str();
-      while(dat.size() > 0)
+      for(const auto& val : dat)
       {
-        ossia::value val = dat.front();
-        dat.pop_front();
         val.apply(ossia_to_pd_value{mess});
       }
+      dat.clear();
     }
 
     // Process
@@ -328,7 +326,7 @@ private:
     // Copy audio outputs. Message inputs are copied in callbacks.
     for(std::size_t i = 0U; i < m_outputs; ++i)
     {
-      auto ap = out_ports[i]->data.target<ossia::audio_port>();
+      auto ap = m_outlets[i]->data.target<ossia::audio_port>();
       ap->samples.resize(ap->samples.size() + 1);
 
       std::copy_n(m_outbuf.begin() + i * bs, bs, ap->samples.back().begin());
@@ -409,42 +407,42 @@ private slots:
     g.add_node(f5);
     g.add_node(f5_2);
 
-    f1->out_ports[0]->address = note_addr;
-    f1_2->out_ports[0]->address = note_addr;
-    f2->out_ports[0]->address = note_addr;
+    f1->outputs()[0]->address = note_addr;
+    f1_2->outputs()[0]->address = note_addr;
+    f2->outputs()[0]->address = note_addr;
 
-    f3->in_ports[0]->address = note_addr;
-    f3->in_ports[1]->address = vol_addr;
-    f3->out_ports[0]->address = l_addr;
-    f3->out_ports[1]->address = r_addr;
+    f3->inputs()[0]->address = note_addr;
+    f3->inputs()[1]->address = vol_addr;
+    f3->outputs()[0]->address = l_addr;
+    f3->outputs()[1]->address = r_addr;
 
-    f4->in_ports[0]->address = l_addr;
-    f4->in_ports[1]->address = r_addr;
-    f4->in_ports[2]->address = filt_addr;
-    f4->out_ports[0]->address = l_addr;
-    f4->out_ports[1]->address = r_addr;
+    f4->inputs()[0]->address = l_addr;
+    f4->inputs()[1]->address = r_addr;
+    f4->inputs()[2]->address = filt_addr;
+    f4->outputs()[0]->address = l_addr;
+    f4->outputs()[1]->address = r_addr;
 
-    f5->in_ports[0]->address = l_addr;
-    f5->in_ports[1]->address = r_addr;
-    f5->in_ports[2]->address = filt_addr;
-    f5->out_ports[0]->address = l_addr;
-    f5->out_ports[1]->address = r_addr;
+    f5->inputs()[0]->address = l_addr;
+    f5->inputs()[1]->address = r_addr;
+    f5->inputs()[2]->address = filt_addr;
+    f5->outputs()[0]->address = l_addr;
+    f5->outputs()[1]->address = r_addr;
 
-    f5_2->in_ports[0]->address = l_addr;
-    f5_2->in_ports[1]->address = r_addr;
-    f5_2->in_ports[2]->address = filt_addr;
-    f5_2->out_ports[0]->address = l_addr;
-    f5_2->out_ports[1]->address = r_addr;
+    f5_2->inputs()[0]->address = l_addr;
+    f5_2->inputs()[1]->address = r_addr;
+    f5_2->inputs()[2]->address = filt_addr;
+    f5_2->outputs()[0]->address = l_addr;
+    f5_2->outputs()[1]->address = r_addr;
 
 
-    g.connect(make_edge(immediate_strict_connection{}, f3->out_ports[0], f4->in_ports[0], f3, f4));
-    g.connect(make_edge(immediate_strict_connection{}, f3->out_ports[1], f4->in_ports[1], f3, f4));
+    g.connect(make_edge(immediate_strict_connection{}, f3->outputs()[0], f4->inputs()[0], f3, f4));
+    g.connect(make_edge(immediate_strict_connection{}, f3->outputs()[1], f4->inputs()[1], f3, f4));
 
-    g.connect(make_edge(immediate_glutton_connection{}, f4->out_ports[0], f5->in_ports[0], f4, f5));
-    g.connect(make_edge(immediate_glutton_connection{}, f4->out_ports[1], f5->in_ports[1], f4, f5));
+    g.connect(make_edge(immediate_glutton_connection{}, f4->outputs()[0], f5->inputs()[0], f4, f5));
+    g.connect(make_edge(immediate_glutton_connection{}, f4->outputs()[1], f5->inputs()[1], f4, f5));
 
-    g.connect(make_edge(delayed_strict_connection{}, f4->out_ports[0], f5_2->in_ports[0], f4, f5_2));
-    g.connect(make_edge(delayed_strict_connection{}, f4->out_ports[1], f5_2->in_ports[1], f4, f5_2));
+    g.connect(make_edge(delayed_strict_connection{}, f4->outputs()[0], f5_2->inputs()[0], f4, f5_2));
+    g.connect(make_edge(delayed_strict_connection{}, f4->outputs()[1], f5_2->inputs()[1], f4, f5_2));
 
     std::vector<float> samples;
 
@@ -510,7 +508,7 @@ private slots:
 
     auto make_constraint = [&] (auto time, auto s, auto e)
     {
-      time_value tv{double{time}};
+      time_value tv{(double)time};
       auto cst = std::make_shared<time_constraint>(cb_2, *s, *e, tv, tv, tv);
       cst->setGranularity(granul);
       s->nextTimeConstraints().push_back(cst);
@@ -550,16 +548,16 @@ private slots:
     c[13] = make_constraint(3000, e[13], e[14]);
 
 
-    c[1]->addTimeProcess(std::make_shared<graph_process>(graph, f1));
-    c[3]->addTimeProcess(std::make_shared<graph_process>(graph, f2));
-    c[5]->addTimeProcess(std::make_shared<graph_process>(graph, f1_2));
+    c[1]->addTimeProcess(std::make_shared<node_process>(graph, f1));
+    c[3]->addTimeProcess(std::make_shared<node_process>(graph, f2));
+    c[5]->addTimeProcess(std::make_shared<node_process>(graph, f1_2));
 
-    c[7]->addTimeProcess(std::make_shared<graph_process>(graph, f3));
+    c[7]->addTimeProcess(std::make_shared<node_process>(graph, f3));
 
-    c[9]->addTimeProcess(std::make_shared<graph_process>(graph, f4));
+    c[9]->addTimeProcess(std::make_shared<node_process>(graph, f4));
 
-    c[11]->addTimeProcess(std::make_shared<graph_process>(graph, f5));
-    c[13]->addTimeProcess(std::make_shared<graph_process>(graph, f5_2));
+    c[11]->addTimeProcess(std::make_shared<node_process>(graph, f5));
+    c[13]->addTimeProcess(std::make_shared<node_process>(graph, f5_2));
 
 
     main_constraint->setDriveMode(ossia::clock::DriveMode::EXTERNAL);
