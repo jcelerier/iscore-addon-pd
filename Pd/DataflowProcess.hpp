@@ -4,8 +4,10 @@
 #include <State/Address.hpp>
 #include <iscore/serialization/VisitorInterface.hpp>
 #include <ossia/dataflow/dataflow.hpp>
+namespace QtNodes { class Node; }
 namespace Dataflow
 {
+class CustomDataModel;
 enum class PortType { Message, Audio, Midi };
 struct Port
 {
@@ -67,6 +69,8 @@ public:
   const std::vector<Port>& inlets() const { return m_inlets; }
   const std::vector<Port>& outlets() const { return m_outlets; }
 
+  CustomDataModel* nodeModel{};
+  QtNodes::Node* node{};
 signals:
   void inletsChanged();
   void outletsChanged();

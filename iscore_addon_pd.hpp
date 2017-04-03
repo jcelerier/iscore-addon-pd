@@ -38,4 +38,5 @@ class iscore_addon_pd final:
 
         iscore::Version version() const override;
         UuidKey<iscore::Plugin> key() const override;
+        std::vector<iscore::PluginKey> required() const override;
 };

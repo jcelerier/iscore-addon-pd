@@ -8,6 +8,9 @@
 #include <iscore/plugins/customfactory/FactorySetup.hpp>
 #include <iscore_addon_pd_commands_files.hpp>
 
+#include <Scenario/iscore_plugin_scenario.hpp>
+#include <iscore_plugin_deviceexplorer.hpp>
+
 #include "z_libpd.h"
 #include "m_imp.h"
 std::pair<const CommandGroupKey, CommandGeneratorMap> iscore_addon_pd::make_commands()
@@ -53,6 +56,15 @@ iscore_addon_pd::make_applicationPlugin(
         const iscore::GUIApplicationContext& app)
 {
     return new Dataflow::ApplicationPlugin{app};
+}
+
+auto iscore_addon_pd::required() const
+  -> std::vector<iscore::PluginKey>
+{
+    return {
+      iscore_plugin_scenario::static_key(),
+      iscore_plugin_deviceexplorer::static_key()
+    };
 }
 
 

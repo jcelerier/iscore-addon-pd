@@ -1,9 +1,10 @@
 #pragma once
 #include <iscore/plugins/application/GUIApplicationPlugin.hpp>
-
+class QAction;
 namespace Dataflow
 {
 class ApplicationPlugin final :
+    public QObject,
     public iscore::GUIApplicationPlugin
 {
 public:
@@ -18,6 +19,8 @@ private:
   iscore::GUIElements makeGUIElements() override;
 
   void on_initDocument(iscore::Document& doc) override;
+
+  QAction* m_showScene{};
 
 };
 }

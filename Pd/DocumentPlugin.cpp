@@ -9,7 +9,6 @@ DocumentPlugin::DocumentPlugin(
         QObject* parent):
     iscore::DocumentPlugin{ctx, std::move(id), "PdDocPlugin", parent}
 {
-  window.view.show();
 }
 
 DocumentPlugin::~DocumentPlugin()
