@@ -24,7 +24,7 @@ ApplicationPlugin::ApplicationPlugin(
     {
       auto& plug = doc->context().plugin<DocumentPlugin>();
       plug.reload();
-      plug.window.view.show();
+      plug.window.window.show();
     }
   });
 }
@@ -58,7 +58,7 @@ void ApplicationPlugin::on_documentChanged(
   {
     auto& doc_plugin = olddoc->context().plugin<DocumentPlugin>();
 
-    doc_plugin.window.view.hide();
+    doc_plugin.window.window.hide();
   }
 }
 }

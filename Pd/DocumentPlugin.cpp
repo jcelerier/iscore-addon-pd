@@ -21,6 +21,9 @@ DocumentPlugin::DocumentPlugin(
       this, &DocumentPlugin::on_nodeMoved);
   con(window.scene, &ReleaseFlowScene::released,
       this, &DocumentPlugin::on_released);
+
+  con(window, &DataflowWindow::typeChanged,
+      this, &DocumentPlugin::on_connectionTypeChanged);
 }
 
 DocumentPlugin::~DocumentPlugin()
@@ -70,7 +73,14 @@ void DocumentPlugin::reload()
       pair.gui = window.scene.createConnection(
             *snk.node, *cable.inlet,
             *src.node, *cable.outlet).get();
-      pair.gui->setGraphicsObject(std::make_unique<CustomConnection>(window.scene, *pair.gui));
+      auto ct = std::make_unique<CustomConnection>(window.scene, *pair.gui);
+
+      con(*ct, &CustomConnection::selectionChanged,
+          this, [=] (bool b) {
+          if(b) window.cableSelected(*pair.gui);
+          else window.cableDeselected(*pair.gui);
+      });
+      pair.gui->setGraphicsObject(std::move(ct));
     }
     else
     {
@@ -281,6 +291,11 @@ void DocumentPlugin::on_connectionDeleted(QtNodes::Connection& c)
 
     quiet_removeConnection(existing_it->cable);
   }
+}
+
+void DocumentPlugin::on_connectionTypeChanged(QList<QtNodes::Connection*> c, CableType t)
+{
+  ISCORE_TODO;
 }
 
 void DocumentPlugin::on_nodeMoved(QtNodes::Node& n, const QPointF& pos)
