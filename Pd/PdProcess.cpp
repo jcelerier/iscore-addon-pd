@@ -12,13 +12,6 @@ ProcessModel::ProcessModel(
         QObject* parent):
     Dataflow::ProcessModel{duration, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent}
 {
-    m_script = "(function(t) { \n"
-               "     var obj = new Object; \n"
-               "     obj[\"address\"] = 'OSCdevice:/millumin/layer/x/instance'; \n"
-               "     obj[\"value\"] = t + iscore.value('OSCdevice:/millumin/layer/y/instance'); \n"
-               "     return [ obj ]; \n"
-               "});";
-
     metadata().setInstanceName(*this);
 }
 

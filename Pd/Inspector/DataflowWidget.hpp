@@ -67,8 +67,8 @@ public:
     setLayout(&m_lay);
 
     reinit();
-    con(proc, &ProcessModel::inletsChanged, this, &DataflowWidget::reinit);
-    con(proc, &ProcessModel::outletsChanged, this, &DataflowWidget::reinit);
+    con(proc, &ProcessModel::inletsChanged, this, &DataflowWidget::reinit, Qt::QueuedConnection);
+    con(proc, &ProcessModel::outletsChanged, this, &DataflowWidget::reinit, Qt::QueuedConnection);
 
   }
 
@@ -139,7 +139,7 @@ public:
     m_addOutlet = new QPushButton{tr("Add outlet"), this};
     connect(m_addOutlet, &QPushButton::clicked, this, [&] {
       m_disp.submitCommand<AddPort>(m_proc, false);
-    });
+    }, Qt::QueuedConnection);
     m_lay.addWidget(m_addOutlet);
   }
 

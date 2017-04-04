@@ -2,10 +2,27 @@
 
 #include <nodes/FlowScene>
 #include <nodes/FlowView>
+#include <nodes/../../src/Node.hpp>
+#include <nodes/../../src/NodeGraphicsObject.hpp>
+#include <nodes/../../src/ConnectionGraphicsObject.hpp>
 #include <QPointer>
+#include <QGraphicsSceneMouseEvent>
 #include <Pd/DataflowProcess.hpp>
 namespace Dataflow
 {
+class CustomConnection : public QtNodes::ConnectionGraphicsObject
+{
+public:
+  using QtNodes::ConnectionGraphicsObject::ConnectionGraphicsObject;
+
+private:
+  void contextMenuEvent(QGraphicsSceneContextMenuEvent *contextMenuEvent) override
+  {
+    qDebug("yaaaa");
+  }
+
+};
+
 class CustomDataModel : public QtNodes::NodeDataModel
 {
 public:
@@ -15,6 +32,12 @@ public:
     process{&proc}
   {
     process->nodeModel = this;
+    connect(process, &Dataflow::ProcessModel::posChanged,
+            this, [&] (QPointF pos) {
+      if(process->node)
+        process->node->nodeGraphicsObject().setPos(pos);
+    });
+
   }
 
   ~CustomDataModel()
@@ -25,14 +48,16 @@ public:
 
   QString caption() const override
   {
-    return "caption";
+    if(process)
+      return process->metadata().getName();
+    return QStringLiteral("DEAD");
   }
 
   QString name() const override
   {
     if(process)
       return process->metadata().getName();
-    return "DEAD";
+    return QStringLiteral("DEAD");
   }
 
   std::unique_ptr<QtNodes::NodeDataModel> clone() const override
@@ -73,6 +98,23 @@ public:
   }
 };
 
+class ReleaseFlowScene : public QtNodes::FlowScene
+{
+  Q_OBJECT
+public:
+  using FlowScene::FlowScene;
+
+signals:
+  void released(QPointF);
+private:
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override
+  {
+    emit released(event->pos());
+    QGraphicsScene::mouseReleaseEvent(event);
+  }
+};
+
+
 class DataflowWindow
 {
 public:
@@ -81,7 +123,7 @@ public:
 
   }
 
-  QtNodes::FlowScene scene;
+  ReleaseFlowScene scene;
   QtNodes::FlowView view{&scene};
 };
 }
