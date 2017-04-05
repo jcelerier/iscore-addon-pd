@@ -30,12 +30,21 @@ public:
       Process::ProcessModel{vis, parent}
   {
       vis.writeTo(*this);
+      updateCounts();
   }
 
   ~ProcessModel();
 
   void setInlets(const std::vector<Port>& inlets);
   void setOutlets(const std::vector<Port>& outlets);
+
+  std::size_t audioInlets() const { return m_portCount.audioIn; }
+  std::size_t messageInlets() const { return m_portCount.messageIn; }
+  std::size_t midiInlets() const { return m_portCount.midiIn; }
+
+  std::size_t audioOutlets() const { return m_portCount.audioOut; }
+  std::size_t messageOutlets() const { return m_portCount.messageOut; }
+  std::size_t midiOutlets() const { return m_portCount.midiOut; };
 
   const std::vector<Port>& inlets() const;
   const std::vector<Port>& outlets() const;
@@ -55,8 +64,14 @@ signals:
   void posChanged(QPointF pos);
 
 private:
+  void updateCounts();
   std::vector<Port> m_inlets;
   std::vector<Port> m_outlets;
   QPointF m_pos;
+
+  struct {
+  std::size_t audioIn{}, messageIn{}, midiIn{};
+  std::size_t audioOut{}, messageOut{}, midiOut{};
+  } m_portCount;
 };
 }

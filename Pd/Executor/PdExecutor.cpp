@@ -9,105 +9,412 @@
 #include <ossia/editor/state/message.hpp>
 #include <ossia/editor/state/state.hpp>
 #include <ossia/editor/scenario/time_constraint.hpp>
+#include <ossia/dataflow/node_process.hpp>
 #include <Pd/PdProcess.hpp>
-
+#include <QFileInfo>
 namespace Pd
 {
 
 
-ProcessExecutor::ProcessExecutor(
-        const Explorer::DeviceDocumentPlugin& devices):
-    m_devices{devices.list()}
+struct libpd_list_wrapper
 {
-    m_instance = pdinstance_new();
-    pd_setinstance(m_instance);
+  t_atom* impl{};
+  int size{};
 
-    // compute audio    [; pd dsp 1(
-    libpd_start_message(1); // one entry in list
-    libpd_add_float(1.0f);
-    libpd_finish_message("pd", "dsp");
-}
-
-ProcessExecutor::~ProcessExecutor()
-{
-    pdinstance_free(m_instance);
-}
-
-void ProcessExecutor::setTickFun(const QString& val)
-{
-    pd_setinstance(m_instance);
-
-    auto handle = libpd_openfile("ex.pd", "/tmp");
-    m_dollarzero = libpd_getdollarzero(handle);
-    auto mess = std::to_string(m_dollarzero) + "-out";
-    libpd_bind(mess.c_str());
-    libpd_set_floathook([] (const char *recv, float f) {
-      qDebug() << "received float: " << recv <<  f;
-    });
-
-    libpd_set_printhook([] (const char *recv) {
-      ossia::logger().info("Pd: {}", recv);
-    });
-}
-
-ossia::state_element ProcessExecutor::state()
-{
-    return state(parent()->getDate() / parent()->getDurationNominal());
-}
-
-ossia::state_element ProcessExecutor::state(double t)
-{
-    pd_setinstance(m_instance);
-    auto mess = std::to_string(m_dollarzero) + "-time";
-    /*
-    libpd_start_message(1); // one entry in list
-    libpd_add_float(t);
-    libpd_finish_message(mess.c_str(), "float");
-    */
-    libpd_float(mess.c_str(), t);
-
-
-    float inbuf[64], outbuf[128];  // one input channel, two output channels
-                                   // block size 64, one tick per buffer
-    libpd_process_float(1, inbuf, outbuf);
-    ossia::state st;
-    /*
-    if(!m_tickFun.isCallable())
-        return st;
-
-    // 2. Get the value of the js fun
-    auto messages = JS::convert::messages(m_tickFun.call({QJSValue{t}}));
-
-    m_engine.collectGarbage();
-
-    for(const auto& mess : messages)
+  template<typename Functor>
+  void iterate(const Functor& f) const {
+    for(auto it = impl; it; it = libpd_next_atom(it))
     {
-        st.add(Engine::iscore_to_ossia::message(mess, m_devices));
+      if(libpd_is_float(it))
+        f(libpd_get_float(it));
+      else if(libpd_is_symbol(it))
+        f(libpd_get_symbol(it));
     }
-    */
+  }
 
-    // 3. Convert our value back
-    if(unmuted())
-      return st;
-    return {};
-}
+  struct value_visitor
+  {
+    std::vector<ossia::value>& v;
+    void operator()(float f) const
+    { v.push_back(f); }
+    void operator()(const char* s) const
+    { v.push_back(std::string(s)); }
+  };
 
-ossia::state_element ProcessExecutor::offset(ossia::time_value off)
+  std::vector<ossia::value> to_tuple()
+  {
+    std::vector<ossia::value> vals;
+    vals.reserve(size);
+    iterate(value_visitor{vals});
+    return vals;
+  }
+};
+
+
+PdGraphNode::PdGraphNode(
+    ossia::string_view folder, ossia::string_view file,
+    std::size_t inputs, std::size_t outputs,
+    std::vector<std::string> in_val, std::vector<std::string> out_val,
+    bool midi_in, bool midi_out)
+  : m_inputs{inputs}
+  , m_outputs{outputs}
+  , m_inmess{std::move(in_val)}
+  , m_outmess{std::move(out_val)}
+  , m_file{file}
 {
-    return state(off / parent()->getDurationNominal());
+  m_currentInstance = nullptr;
+
+  // Set-up buffers
+  const std::size_t bs = libpd_blocksize();
+  m_inbuf.resize(m_inputs * bs);
+  m_outbuf.resize(m_outputs * bs);
+
+  // Create instance
+  m_instance = pdinstance_new();
+  pd_setinstance(m_instance);
+
+  // Enable audio
+  libpd_start_message(1);
+  libpd_add_float(1.0f);
+  libpd_finish_message("pd", "dsp");
+
+  // Open
+  auto handle = libpd_openfile(file.data(), folder.data());
+  m_dollarzero = libpd_getdollarzero(handle);
+
+  for(auto& mess : m_inmess)
+    add_dzero(mess);
+  for(auto& mess : m_outmess)
+    add_dzero(mess);
+
+  // Create correct I/Os
+  m_inlets.reserve(inputs + m_inmess.size() + int(midi_in));
+  for(std::size_t i = 0U; i < inputs ; i++)
+    m_inlets.push_back(ossia::make_inlet<ossia::audio_port>());
+  for(auto& str : m_inmess)
+  {
+    m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
+  }
+
+  m_outlets.reserve(outputs + m_outmess.size()+ int(midi_out));
+  for(std::size_t i = 0U; i < outputs ; i++)
+    m_outlets.push_back(ossia::make_outlet<ossia::audio_port>());
+  for(auto& mess : m_outmess)
+  {
+    libpd_bind(mess.c_str());
+    m_outlets.push_back(ossia::make_outlet<ossia::value_port>());
+  }
+
+  if(midi_in)
+  {
+    auto mid = ossia::make_inlet<ossia::midi_port>();
+    m_midi_inlet = mid->data.target<ossia::midi_port>();
+    m_inlets.push_back(std::move(mid));
+  }
+  if(midi_out)
+  {
+    auto mid = ossia::make_outlet<ossia::midi_port>();
+    m_midi_outlet = mid->data.target<ossia::midi_port>();
+    m_outlets.push_back(std::move(mid));
+  }
+
+  // Set-up message callbacks
+  libpd_set_printhook([] (const char *s) { qDebug() << "string: " << s; });
+
+  libpd_set_floathook([] (const char *recv, float f) {
+    if(auto v = m_currentInstance->get_value_port(recv))
+    {
+      v->data.push_back(f);
+    }
+  });
+  libpd_set_banghook([] (const char *recv) {
+    if(auto v = m_currentInstance->get_value_port(recv))
+    {
+      v->data.push_back(ossia::impulse{});
+    }
+  });
+  libpd_set_symbolhook([] (const char *recv, const char *sym) {
+    if(auto v = m_currentInstance->get_value_port(recv))
+    {
+      v->data.push_back(std::string(sym));
+    }
+  });
+
+  libpd_set_listhook([] (const char *recv, int argc, t_atom *argv) {
+    if(auto v = m_currentInstance->get_value_port(recv))
+    {
+      v->data.push_back(libpd_list_wrapper{argv, argc}.to_tuple());
+    }
+  });
+  libpd_set_messagehook([] (const char *recv, const char *msg, int argc, t_atom *argv) {
+    if(auto v = m_currentInstance->get_value_port(recv))
+    {
+      v->data.push_back(libpd_list_wrapper{argv, argc}.to_tuple());
+    }
+  });
+
+  // TODO
+  libpd_set_noteonhook([] (int channel, int pitch, int velocity) {
+    if(auto v = m_currentInstance->get_midi_out())
+    {
+      v->messages.push_back(
+            (velocity > 0)
+            ? mm::MakeNoteOn(channel, pitch, velocity)
+            : mm::MakeNoteOff(channel, pitch, velocity)
+              );
+    }
+  });
+  libpd_set_controlchangehook([] (int channel, int controller, int value) {
+    if(auto v = m_currentInstance->get_midi_out())
+    {
+      v->messages.push_back(mm::MakeControlChange(channel, controller, value + 8192));
+    }
+  });
+
+  libpd_set_programchangehook([] (int channel, int value) {
+    if(auto v = m_currentInstance->get_midi_out())
+    {
+      v->messages.push_back(mm::MakeProgramChange(channel, value));
+    }
+  });
+  libpd_set_pitchbendhook([] (int channel, int value) {
+    if(auto v = m_currentInstance->get_midi_out())
+    {
+      v->messages.push_back(mm::MakePitchBend(channel, value));
+    }
+  });
+  libpd_set_aftertouchhook([] (int channel, int value) {
+    if(auto v = m_currentInstance->get_midi_out())
+    {
+      v->messages.push_back(mm::MakeAftertouch(channel, value));
+    }
+  });
+  libpd_set_polyaftertouchhook([] (int channel, int pitch, int value) {
+    if(auto v = m_currentInstance->get_midi_out())
+    {
+      v->messages.push_back(mm::MakePolyPressure(channel, pitch, value));
+    }
+  });
+  libpd_set_midibytehook([] (int port, int byte) {
+    // TODO
+  });
+
+
 }
+
+
+PdGraphNode::~PdGraphNode()
+{
+  pdinstance_free(m_instance);
+}
+
+
+ossia::outlet*PdGraphNode::get_outlet(const char* str) const
+{
+  ossia::string_view s = str;
+  auto it = ossia::find(m_outmess, s);
+  if(it != m_outmess.end())
+    return m_outlets[std::distance(m_outmess.begin(), it) + m_outputs].get();
+  return nullptr;
+}
+
+
+ossia::value_port*PdGraphNode::get_value_port(const char* str) const
+{
+  return get_outlet(str)->data.target<ossia::value_port>();
+}
+
+
+ossia::midi_port*PdGraphNode::get_midi_in() const
+{
+  return m_midi_inlet;
+}
+
+
+ossia::midi_port*PdGraphNode::get_midi_out() const
+{
+  return m_midi_outlet;
+}
+
+
+void PdGraphNode::run(ossia::execution_state& e)
+{
+  // Setup
+  pd_setinstance(m_instance);
+  m_currentInstance = this;
+  libpd_init_audio(m_inputs, m_outputs, 44100);
+
+  const auto bs = libpd_blocksize();
+
+  // Copy audio inputs
+  for(std::size_t i = 0U; i < m_inputs; i++)
+  {
+    auto ap = m_inlets[i]->data.target<ossia::audio_port>();
+    const auto pos = i * bs;
+    if(!ap->samples.empty())
+    {
+      auto& arr = ap->samples.back();
+      std::copy_n(arr.begin(), bs, m_inbuf.begin() + pos);
+    }
+  }
+
+  // Copy midi inputs
+  if(m_midi_inlet)
+  {
+    auto& dat = m_midi_inlet->messages;
+    for(const auto& mess : dat)
+    {
+      switch(mess.getMessageType())
+      {
+        case mm::MessageType::NOTE_OFF:
+          libpd_noteon(mess.getChannel(), mess.data[1], 0);
+          break;
+        case mm::MessageType::NOTE_ON:
+          libpd_noteon(mess.getChannel(), mess.data[1], mess.data[2]);
+          break;
+        case mm::MessageType::POLY_PRESSURE:
+          libpd_polyaftertouch(mess.getChannel(), mess.data[1], mess.data[2]);
+          break;
+        case mm::MessageType::CONTROL_CHANGE:
+          libpd_controlchange(mess.getChannel(), mess.data[1], mess.data[2]);
+          break;
+        case mm::MessageType::PROGRAM_CHANGE:
+          libpd_programchange(mess.getChannel(), mess.data[1]);
+          break;
+        case mm::MessageType::AFTERTOUCH:
+          libpd_aftertouch(mess.getChannel(), mess.data[1]);
+          break;
+        case mm::MessageType::PITCH_BEND:
+          libpd_pitchbend(mess.getChannel(), mess.data[1] - 8192);
+          break;
+        case mm::MessageType::INVALID:
+        default:
+          break;
+      }
+    }
+
+    dat.clear();
+  }
+
+  // Copy message inputs
+  for(std::size_t i = m_inputs; i < m_inlets.size(); ++i)
+  {
+    auto& dat = m_inlets[i]->data.target<ossia::value_port>()->data;
+
+    auto mess = m_inmess[i - m_inputs].c_str();
+    for(const auto& val : dat)
+    {
+      val.apply(ossia_to_pd_value{mess});
+    }
+    dat.clear();
+  }
+
+  // Process
+  std::string foo = "foo";
+  add_dzero(foo);
+  libpd_bang(foo.c_str());
+  libpd_process_raw(m_inbuf.data(), m_outbuf.data());
+
+  // Copy audio outputs. Message inputs are copied in callbacks.
+  for(std::size_t i = 0U; i < m_outputs; ++i)
+  {
+    auto ap = m_outlets[i]->data.target<ossia::audio_port>();
+    ap->samples.resize(ap->samples.size() + 1);
+
+    std::copy_n(m_outbuf.begin() + i * bs, bs, ap->samples.back().begin());
+  }
+
+  // Teardown
+  m_currentInstance = nullptr;
+}
+
+
+void PdGraphNode::add_dzero(std::string& s) const
+{
+  s = std::to_string(m_dollarzero) + "-" + s;
+}
+
+
+
 
 Component::Component(
-        ::Engine::Execution::ConstraintComponent& parentConstraint,
-        Pd::ProcessModel& element,
-        const ::Engine::Execution::Context& ctx,
-        const Id<iscore::Component>& id,
-        QObject* parent):
-    ::Engine::Execution::ProcessComponent_T<Pd::ProcessModel, ProcessExecutor>{
-          parentConstraint, element, ctx, id, "PdComponent", parent}
+    ::Engine::Execution::ConstraintComponent& parentConstraint,
+    Pd::ProcessModel& element,
+    const Dataflow::DocumentPlugin& df,
+    const ::Engine::Execution::Context& ctx,
+    const Id<iscore::Component>& id,
+    QObject* parent):
+  ::Engine::Execution::ProcessComponent{
+      parentConstraint, element, ctx, id, "PdComponent", parent}
 {
-    m_ossia_process = std::make_shared<ProcessExecutor>(ctx.devices);
-    OSSIAProcess().setTickFun(element.script());
+  QFileInfo f(element.script());
+  if(!f.exists())
+  {
+    qDebug() << "Missing script. Returning";
+    return;
+  }
+
+  std::vector<ossia::net::address_base*> inlet_addresses, outlet_addresses;
+  const std::vector<Dataflow::Port>& model_inlets = element.inlets();
+  const std::vector<Dataflow::Port>& model_outlets = element.outlets();
+  inlet_addresses.resize(model_inlets.size());
+  outlet_addresses.resize(model_outlets.size());
+
+  std::vector<std::string> in_mess, out_mess;
+  for(std::size_t i = 0; i < model_inlets.size(); i++)
+  {
+    auto& e = model_inlets[i];
+    if(e.type == Dataflow::PortType::Message)
+      in_mess.push_back(e.customData.toStdString());
+
+    inlet_addresses[i] = df.resolve(e.address);
+  }
+
+  for(std::size_t i = 0; i < model_outlets.size(); i++)
+  {
+    auto& e = model_outlets[i];
+    if(e.type == Dataflow::PortType::Message)
+      out_mess.push_back(e.customData.toStdString());
+
+    outlet_addresses[i] = df.resolve(e.address);
+  }
+
+  qDebug() << "inlets";
+  for(auto addr : inlet_addresses)
+    qDebug() << (addr ? ossia::net::address_string_from_node(*addr).c_str() : "No addr");
+
+  qDebug() << "outlets";
+  for(auto addr : outlet_addresses)
+    qDebug() << (addr ? ossia::net::address_string_from_node(*addr).c_str() : "No addr");
+
+  qDebug() << f.canonicalPath() << f.completeBaseName();
+
+  auto node = std::make_shared<PdGraphNode>(
+        f.canonicalPath().toStdString(),
+        f.fileName().toStdString(),
+        element.audioInlets(), element.audioOutlets(),
+        std::move(in_mess), std::move(out_mess),
+        false, false
+        );
+
+  for(std::size_t i = 0; i < inlet_addresses.size(); i++)
+  {
+    if(auto addr = inlet_addresses[i])
+      node->inputs()[i]->address = addr;
+  }
+  for(std::size_t i = 0; i < outlet_addresses.size(); i++)
+  {
+    if(auto addr = outlet_addresses[i])
+      node->outputs()[i]->address = addr;
+  }
+  df.currentExecutionContext->add_node(node);
+
+  m_ossia_process =
+      std::make_shared<ossia::node_process>(df.currentExecutionContext, node);
+
 }
+
+PdGraphNode* PdGraphNode::m_currentInstance;
+
 }
 

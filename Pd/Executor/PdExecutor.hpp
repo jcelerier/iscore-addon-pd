@@ -10,44 +10,114 @@
 #include <iscore/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
 #include <Device/Protocol/DeviceList.hpp>
+#include <Pd/DocumentPlugin.hpp>
+#include <ossia/detail/string_view.hpp>
 #include <z_libpd.h>
-namespace Pd
+#include <iscore_addon_pd_export.h>
+
+namespace Dataflow
 {
-class ProcessModel;
-class ProcessExecutor final :
-        public ossia::time_process
+
+template <typename ProcessComponent_T>
+class ProcessComponentFactory_T
+    : public iscore::
+          GenericComponentFactoryImpl<ProcessComponent_T, Engine::Execution::ProcessComponentFactory>
 {
-    public:
-        ProcessExecutor(
-                const Explorer::DeviceDocumentPlugin& devices);
-
-        ~ProcessExecutor();
-
-        void setTickFun(const QString& val);
-
-        ossia::state_element state(double);
-        ossia::state_element state() override;
-        ossia::state_element offset(ossia::time_value) override;
-
-    private:
-        const Device::DeviceList& m_devices;
-        t_pdinstance * m_instance{};
-        int m_dollarzero = 0;
+public:
+  using model_type = typename ProcessComponent_T::model_type;
+  std::shared_ptr<Engine::Execution::ProcessComponent> make(
+      Engine::Execution::ConstraintComponent& cst,
+      Process::ProcessModel& proc,
+      const Engine::Execution::Context& ctx,
+      const Id<iscore::Component>& id,
+      QObject* parent) const final override
+  {
+    auto& df_plug = ctx.doc.plugin<Dataflow::DocumentPlugin>();
+    auto comp = std::make_shared<ProcessComponent_T>(
+          cst, static_cast<typename ProcessComponent_T::model_type&>(proc), df_plug, ctx, id, parent);
+    this->init(comp.get());
+    return comp;
+  }
 };
 
 
+}
+namespace Pd
+{
+class ProcessModel;
+
+class ISCORE_ADDON_PD_EXPORT PdGraphNode final :
+    public ossia::graph_node
+{
+public:
+  PdGraphNode(
+      ossia::string_view folder,
+      ossia::string_view file,
+      std::size_t inputs,
+      std::size_t outputs,
+      std::vector<std::string> in_val,
+      std::vector<std::string> out_val,
+      bool midi_in = true,
+      bool midi_out = true
+      );
+
+  ~PdGraphNode();
+
+private:
+  ossia::outlet* get_outlet(const char* str) const;
+
+  ossia::value_port* get_value_port(const char* str) const;
+
+  ossia::midi_port* get_midi_in() const;
+  ossia::midi_port* get_midi_out() const;
+
+  struct ossia_to_pd_value
+  {
+    const char* mess{};
+    void operator()() const { }
+    template<typename T>
+    void operator()(const T&) const { }
+
+    void operator()(float f) const { libpd_float(mess, f); }
+    void operator()(int f) const { libpd_float(mess, f); }
+    void operator()(const std::string& f) const { libpd_symbol(mess, f.c_str()); }
+    void operator()(const ossia::impulse& f) const { libpd_bang(mess); }
+
+    // TODO convert other types
+  };
+
+  void run(ossia::execution_state& e) override;
+  void add_dzero(std::string& s) const;
+
+  static PdGraphNode* m_currentInstance;
+
+  t_pdinstance * m_instance{};
+  int m_dollarzero = 0;
+
+  std::size_t m_inputs{}, m_outputs{};
+  std::vector<std::string> m_inmess, m_outmess;
+  std::vector<float> m_inbuf, m_outbuf;
+  ossia::midi_port* m_midi_inlet{};
+  ossia::midi_port* m_midi_outlet{};
+  std::string m_file;
+};
+
 class Component final :
-        public ::Engine::Execution::ProcessComponent_T<Pd::ProcessModel, ProcessExecutor>
+    public Engine::Execution::ProcessComponent
 {
         COMPONENT_METADATA("78657f42-3a2a-4b80-8736-8736463442b4")
+
     public:
+        using model_type = Pd::ProcessModel;
         Component(
                 Engine::Execution::ConstraintComponent& parentConstraint,
                 Pd::ProcessModel& element,
+                const Dataflow::DocumentPlugin& df,
                 const Engine::Execution::Context& ctx,
                 const Id<iscore::Component>& id,
                 QObject* parent);
 };
 
-using ComponentFactory = ::Engine::Execution::ProcessComponentFactory_T<Component>;
+
+using ComponentFactory = Dataflow::ProcessComponentFactory_T<Pd::Component>;
 }

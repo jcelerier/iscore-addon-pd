@@ -27,11 +27,12 @@ enum class PortType { Message, Audio, Midi };
 struct Port
 {
   PortType type;
+  QString customData;
   State::AddressAccessor address;
 
   friend bool operator==(const Port& lhs, const Port& rhs)
   {
-    return lhs.type == rhs.type && lhs.address == rhs.address;
+    return lhs.type == rhs.type && lhs.customData == rhs.customData && lhs.address == rhs.address;
   }
 };
 

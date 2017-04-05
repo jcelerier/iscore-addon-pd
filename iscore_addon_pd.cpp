@@ -5,6 +5,7 @@
 #include <Pd/Commands/PdCommandFactory.hpp>
 #include <Pd/Inspector/PdInspectorFactory.hpp>
 #include <Pd/ApplicationPlugin.hpp>
+#include <Pd/DataflowClock.hpp>
 #include <iscore/plugins/customfactory/FactorySetup.hpp>
 #include <iscore_addon_pd_commands_files.hpp>
 
@@ -39,13 +40,14 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
         , FW<Process::LayerFactory, Pd::LayerFactory>
         , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
+        , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
     >(ctx, key);
 }
 
 iscore_addon_pd::iscore_addon_pd()
 {
     libpd_init();
-    libpd_init_audio(1, 2, 44100);
+    libpd_init_audio(2, 2, 44100);
 
     libpd_set_printhook([] (const char *s) { qDebug() << "string: " << s; });
     libpd_set_floathook([] (const char *s, float x)  { qDebug() << "float: " << s << x; });

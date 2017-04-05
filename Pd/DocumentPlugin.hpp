@@ -7,6 +7,9 @@
 #include <iscore/command/Dispatchers/QuietOngoingCommandDispatcher.hpp>
 #include <core/document/Document.hpp>
 #include <core/document/DocumentModel.hpp>
+#include <ossia/network/generic/generic_device.hpp>
+#include <ossia/network/local/local.hpp>
+#include <ossia/dataflow/graph.hpp>
 #include <boost/bimap.hpp>
 namespace Dataflow
 {
@@ -21,6 +24,8 @@ public:
     QtNodes::Connection* gui{};
     Cable cable;
   };
+
+  std::shared_ptr<ossia::graph> currentExecutionContext;
 
   explicit DocumentPlugin(
       const iscore::DocumentContext& ctx,
@@ -48,12 +53,21 @@ public:
   void on_nodeMoved(QtNodes::Node& c, const QPointF& pos);
   void on_released(QPointF);
 
+  ossia::net::address_base* resolve(const State::AddressAccessor& ) const;
+
   DataflowWindow window;
 
   std::vector<ConnectionImpl> cables;
 
   iscore::QuietOngoingCommandDispatcher m_dispatcher;
 
+  mutable ossia::net::generic_device audiodev;
+  mutable ossia::net::generic_device mididev;
+
+  std::vector<ossia::net::address_base*> audio_ins;
+  std::vector<ossia::net::address_base*> audio_outs;
+  std::vector<ossia::net::address_base*> midi_ins;
+  std::vector<ossia::net::address_base*> midi_outs;
   struct temp_bool {
     bool& b;
     temp_bool(bool& bo): b{bo} { b = true; }

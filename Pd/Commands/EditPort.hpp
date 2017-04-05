@@ -34,9 +34,6 @@ class EditPort final : public iscore::Command
         EditPort(const Dataflow::ProcessModel& model,
                  Dataflow::Port next,
                  std::size_t index, bool inlet);
-        EditPort(const Dataflow::ProcessModel& model,
-                 State::AddressAccessor next,
-                 std::size_t index, bool inlet);
 
     void undo() const override;
     void redo() const override;

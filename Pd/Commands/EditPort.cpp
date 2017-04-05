@@ -46,19 +46,6 @@ void AddPort::deserializeImpl(DataStreamOutput& s)
 
 EditPort::EditPort(
         const Dataflow::ProcessModel& model,
-        State::AddressAccessor next,
-        std::size_t index, bool inlet)
-    : m_model{model}
-    , m_new{{}, next} // todo audio, midi..
-    , m_index{index}
-    , m_inlet{inlet}
-{
-  m_old = inlet ? model.inlets()[index] : model.outlets()[index];
-}
-
-
-EditPort::EditPort(
-        const Dataflow::ProcessModel& model,
         Dataflow::Port next,
         std::size_t index, bool inlet)
     : m_model{model}
@@ -67,6 +54,17 @@ EditPort::EditPort(
     , m_inlet{inlet}
 {
   m_old = inlet ? model.inlets()[index] : model.outlets()[index];
+
+  auto isAudio = [] (const State::Address& addr) { return addr.device == "audio"; };
+  auto isMidi = [] (const State::Address& addr) { return addr.device == "midi"; };
+
+  if(m_new.type == PortType::Message)
+  {
+    if(isAudio(m_new.address.address))
+      m_new.type = PortType::Audio;
+    else if(isMidi(m_new.address.address))
+      m_new.type = PortType::Midi;
+  }
 }
 
 void EditPort::undo() const

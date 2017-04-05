@@ -4,6 +4,8 @@
 #include <iscore/command/Dispatchers/CommandDispatcher.hpp>
 #include <iscore/command/Dispatchers/SendStrategy.hpp>
 #include <Pd/Commands/EditConnection.hpp>
+#include <Explorer/DocumentPlugin/DeviceDocumentPlugin.hpp>
+#include <Engine/iscore2OSSIA.hpp>
 namespace Dataflow
 {
 DocumentPlugin::DocumentPlugin(
@@ -11,7 +13,9 @@ DocumentPlugin::DocumentPlugin(
         Id<iscore::DocumentPlugin> id,
         QObject* parent):
     iscore::DocumentPlugin{ctx, std::move(id), "PdDocPlugin", parent},
-    m_dispatcher{ctx.commandStack}
+    m_dispatcher{ctx.commandStack},
+    audiodev{std::make_unique<ossia::net::local_protocol>(), "audio"},
+    mididev{std::make_unique<ossia::net::local_protocol>(), "midi"}
 {
   con(window.scene, &QtNodes::FlowScene::connectionCreated,
       this, &DocumentPlugin::on_connectionCreated);
@@ -24,6 +28,15 @@ DocumentPlugin::DocumentPlugin(
 
   con(window, &DataflowWindow::typeChanged,
       this, &DocumentPlugin::on_connectionTypeChanged);
+
+  audio_ins.push_back(ossia::net::create_node(audiodev.getRootNode(), "/in/0").createAddress());
+  audio_ins.push_back(ossia::net::create_node(audiodev.getRootNode(), "/in/1").createAddress());
+  audio_outs.push_back(ossia::net::create_node(audiodev.getRootNode(), "/out/0").createAddress());
+  audio_outs.push_back(ossia::net::create_node(audiodev.getRootNode(), "/out/1").createAddress());
+  midi_ins.push_back(ossia::net::create_node(mididev.getRootNode(), "/in/0").createAddress());
+  midi_outs.push_back(ossia::net::create_node(mididev.getRootNode(), "/out/0").createAddress());
+
+  currentExecutionContext = std::make_shared<ossia::graph>();
 }
 
 DocumentPlugin::~DocumentPlugin()
@@ -310,6 +323,22 @@ void DocumentPlugin::on_nodeMoved(QtNodes::Node& n, const QPointF& pos)
 void DocumentPlugin::on_released(QPointF)
 {
   m_dispatcher.commit();
+}
+
+ossia::net::address_base* DocumentPlugin::resolve(const State::AddressAccessor& addr) const
+{
+  if(addr.address.device == QStringLiteral("audio"))
+  {
+    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, audiodev)->getAddress();
+  }
+  else if(addr.address.device == QStringLiteral("midi"))
+  {
+    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, mididev)->getAddress();
+  }
+  else
+  {
+    return Engine::iscore_to_ossia::address(addr.address, context().plugin<Explorer::DeviceDocumentPlugin>().list());
+  }
 }
 
 }
