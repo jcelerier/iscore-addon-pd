@@ -2,18 +2,21 @@
 #include <iscore/model/path/Path.hpp>
 #include <State/Address.hpp>
 #include <ossia/detail/optional.hpp>
-
+#include <iscore/model/IdentifiedObject.hpp>
+#include <nodes/../../src/Connection.hpp>
+#include <ossia/dataflow/graph_edge.hpp>
 namespace Dataflow
 {
 class ProcessModel;
 enum class CableType { ImmediateGlutton, ImmediateStrict, DelayedGlutton, DelayedStrict };
-struct Cable
+
+struct CableData
 {
   CableType type;
   Path<Dataflow::ProcessModel> source, sink;
   ossia::optional<int> outlet, inlet;
 
-  friend bool operator==(const Cable& lhs, const Cable& rhs)
+  friend bool operator==(const CableData& lhs, const CableData& rhs)
   {
     return lhs.type == rhs.type
         && lhs.source == rhs.source
@@ -21,6 +24,18 @@ struct Cable
         && lhs.outlet == rhs.outlet
         && lhs.inlet == rhs.inlet;
   }
+};
+
+struct Cable
+    : public IdentifiedObject<Cable>
+    , public CableData
+{
+  Cable() = delete;
+  Cable(const Cable&) = delete;
+  Cable(Id<Cable> c): IdentifiedObject{c, "Cable", nullptr} { }
+
+  QtNodes::Connection* gui{};
+  std::shared_ptr<ossia::graph_edge> exec;
 };
 
 enum class PortType { Message, Audio, Midi };

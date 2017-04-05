@@ -52,7 +52,7 @@ public:
   CustomDataModel* nodeModel{};
   QtNodes::Node* node{};
 
-  std::vector<Cable> cables;
+  std::vector<Id<Cable>> cables;
   QPointF pos() const;
 
 public slots:

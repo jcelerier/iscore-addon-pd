@@ -20,11 +20,6 @@ class DocumentPlugin final :
   Q_OBJECT
 
 public:
-  struct ConnectionImpl {
-    QtNodes::Connection* gui{};
-    Cable cable;
-  };
-
   std::shared_ptr<ossia::graph> currentExecutionContext;
 
   explicit DocumentPlugin(
@@ -37,12 +32,12 @@ public:
   void reload();
 
   // Model -> UI
-  void createConnection(Cable c);
-  void updateConnection(const Cable& before, Cable after);
-  void removeConnection(const Cable& c);
+  void createConnection(Id<Cable>, CableData c);
+  void updateConnection(const Cable& cable, CableData);
+  void removeConnection(Cable& c);
 
-  void quiet_createConnection(ConnectionImpl);
-  void quiet_updateConnection(const Cable& before, Cable after);
+  void quiet_createConnection(Cable*);
+  void quiet_updateConnection(const Cable& cable, CableData);
   void quiet_removeConnection(const Cable& c);
 
   // UI -> Model
@@ -57,7 +52,7 @@ public:
 
   DataflowWindow window;
 
-  std::vector<ConnectionImpl> cables;
+  iscore::EntityMap<Cable> cables;
 
   iscore::QuietOngoingCommandDispatcher m_dispatcher;
 

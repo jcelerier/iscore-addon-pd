@@ -7,6 +7,7 @@
 #include <Engine/Executor/BaseScenarioComponent.hpp>
 #include <Engine/Executor/ConstraintComponent.hpp>
 #include <Pd/DocumentPlugin.hpp>
+#include <Pd/Executor/PdExecutor.hpp>
 #include <portaudio.h>
 namespace Dataflow
 {
@@ -26,12 +27,13 @@ Clock::Clock(
   ossia_cst.setDriveMode(ossia::clock::DriveMode::EXTERNAL);
   // Number of milliseconds in each step -> we tick once per buffer
   ossia_cst.setGranularity(ossia::time_value(1000. * 64. / 44100.) );
-
-  qDebug() << m_plug.currentExecutionContext.get();
 }
 
 Clock::~Clock()
 {
+  for(auto& cbl : m_plug.cables)
+    cbl.exec.reset();
+  m_plug.currentExecutionContext = std::make_shared<ossia::graph>();
   Pa_Terminate();
 }
 
@@ -86,11 +88,6 @@ void Clock::play_impl(
 {
   m_cur = &bs;
 
-  for(auto& con : m_plug.cables)
-  {
-    // TODO Perform the connection
-
-  }
   m_default.play(t);
 
   PaStreamParameters outputParameters;
@@ -131,7 +128,6 @@ void Clock::stop_impl(
 {
   Pa_StopStream( stream );
   m_default.stop();
-  m_plug.currentExecutionContext = std::make_shared<ossia::graph>();
 }
 
 std::unique_ptr<Engine::Execution::ClockManager> ClockFactory::make(

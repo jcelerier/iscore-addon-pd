@@ -153,7 +153,6 @@ PdGraphNode::PdGraphNode(
     }
   });
 
-  // TODO
   libpd_set_noteonhook([] (int channel, int pitch, int velocity) {
     if(auto v = m_currentInstance->get_midi_out())
     {
@@ -344,7 +343,7 @@ Component::Component(
     const ::Engine::Execution::Context& ctx,
     const Id<iscore::Component>& id,
     QObject* parent):
-  ::Engine::Execution::ProcessComponent{
+  DataflowProcessComponent{
       parentConstraint, element, ctx, id, "PdComponent", parent}
 {
   QFileInfo f(element.script());
@@ -387,9 +386,7 @@ Component::Component(
   for(auto addr : outlet_addresses)
     qDebug() << (addr ? ossia::net::address_string_from_node(*addr).c_str() : "No addr");
 
-  qDebug() << f.canonicalPath() << f.completeBaseName();
-
-  auto node = std::make_shared<PdGraphNode>(
+  node = std::make_shared<PdGraphNode>(
         f.canonicalPath().toStdString(),
         f.fileName().toStdString(),
         element.audioInlets(), element.audioOutlets(),
@@ -412,6 +409,50 @@ Component::Component(
   m_ossia_process =
       std::make_shared<ossia::node_process>(df.currentExecutionContext, node);
 
+
+  ///  Connect the cables
+  ///
+  /*
+  for(Dataflow::Cable& cable : element.cables)
+  {
+    // Check if there is already a cable
+    if(!cable.exec)
+    {
+      auto& source = cable.source;
+      auto& sink = cable.sink;
+
+      auto& src_ref = source.find();
+      auto& sink_ref = sink.find();
+
+      auto src_comp = iscore::findComponent<DataflowProcessComponent>(src_ref.components());
+      auto snk_comp = iscore::findComponent<DataflowProcessComponent>(sink_ref.components());
+
+      if(src_comp && snk_comp && cable.inlet && cable.outlet)
+      {
+        switch(cable.type)
+        {
+          case Dataflow::CableType::ImmediateStrict:
+          {
+           // cable.exec = ossia:make_edge(immediate_strict_connection{}, f3->outputs()[0], f4->inputs()[0], f3, f4);
+
+
+
+            break;
+          }
+          case Dataflow::CableType::ImmediateGlutton:
+            break;
+          case Dataflow::CableType::DelayedStrict:
+            break;
+          case Dataflow::CableType::DelayedGlutton:
+            break;
+        }
+
+
+        df.currentExecutionContext->connect(cable.exec);
+      }
+    }
+  }
+  */
 }
 
 PdGraphNode* PdGraphNode::m_currentInstance;

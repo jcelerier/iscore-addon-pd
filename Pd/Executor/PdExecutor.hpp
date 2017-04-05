@@ -102,8 +102,19 @@ private:
   std::string m_file;
 };
 
-class Component final :
+
+class DataflowProcessComponent :
     public Engine::Execution::ProcessComponent
+{
+
+    public:
+        using Engine::Execution::ProcessComponent::ProcessComponent;
+
+  std::shared_ptr<ossia::graph_node> node;
+};
+
+class Component final :
+    public DataflowProcessComponent
 {
         COMPONENT_METADATA("78657f42-3a2a-4b80-8736-8736463442b4")
 

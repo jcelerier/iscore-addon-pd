@@ -35,7 +35,7 @@ class CreateCable final : public iscore::Command
   public:
     CreateCable(
       const Dataflow::DocumentPlugin& dp,
-      Cable theCable);
+      Id<Cable> theCable, CableData dat);
 
   void undo() const override;
   void redo() const override;
@@ -46,7 +46,8 @@ protected:
 
 private:
   Path<Dataflow::DocumentPlugin> m_model;
-  Cable m_cable;
+  Id<Cable> m_cable;
+  CableData m_dat;
 };
 
 class UpdateCable final : public iscore::Command
@@ -56,7 +57,7 @@ class UpdateCable final : public iscore::Command
   public:
     UpdateCable(
       const Dataflow::DocumentPlugin& dp,
-      Cable theOld, Cable theNew);
+      Id<Cable> theCable, CableData oldDat, CableData newDat);
 
   void undo() const override;
   void redo() const override;
@@ -67,7 +68,8 @@ protected:
 
 private:
   Path<Dataflow::DocumentPlugin> m_model;
-  Cable m_old, m_new;
+  Id<Cable> m_cable;
+  CableData m_old, m_new;
 };
 
 class RemoveCable final : public iscore::Command
@@ -77,7 +79,7 @@ class RemoveCable final : public iscore::Command
   public:
     RemoveCable(
       const Dataflow::DocumentPlugin& dp,
-      Cable theCable);
+      const Cable& theCable);
 
   void undo() const override;
   void redo() const override;
@@ -88,6 +90,7 @@ protected:
 
 private:
   Path<Dataflow::DocumentPlugin> m_model;
-  Cable m_cable;
+  Id<Cable> m_cable;
+  CableData m_data;
 };
 }

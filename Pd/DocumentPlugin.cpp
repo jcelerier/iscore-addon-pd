@@ -47,6 +47,7 @@ DocumentPlugin::~DocumentPlugin()
 void DocumentPlugin::reload()
 {
   window.scene.clearScene();
+  /*
 
   auto processes = m_context.document.findChildren<Dataflow::ProcessModel*>();
   for(auto proc : processes)
@@ -76,54 +77,55 @@ void DocumentPlugin::reload()
     });
   }
 
-  for(auto& pair : cables)
+  for(auto& cable : cables)
   {
-    auto& cable = pair.cable;
     auto& src = cable.source.find();
     auto& snk = cable.sink.find();
     if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
     {
-      pair.gui = window.scene.createConnection(
+      cable.gui = window.scene.createConnection(
             *snk.node, *cable.inlet,
             *src.node, *cable.outlet).get();
-      auto ct = std::make_unique<CustomConnection>(window.scene, *pair.gui);
+      auto ct = std::make_unique<CustomConnection>(window.scene, *cable.gui);
 
       con(*ct, &CustomConnection::selectionChanged,
           this, [=] (bool b) {
           if(b) window.cableSelected(*pair.gui);
           else window.cableDeselected(*pair.gui);
       });
-      pair.gui->setGraphicsObject(std::move(ct));
+      cable.gui->setGraphicsObject(std::move(ct));
     }
     else
     {
-      pair.gui = nullptr;
+      cable.gui = nullptr;
     }
   }
+  **/
 }
 
-void DocumentPlugin::createConnection(Cable c)
+void DocumentPlugin::createConnection(Id<Cable>, CableData c)
 {
+  /*
   auto cmd = start_command();
-  ConnectionImpl impl;
-  impl.cable = std::move(c);
-  auto& cable = impl.cable;
+  auto& cable = *c;
   auto& src = cable.source.find();
   auto& snk = cable.sink.find();
 
   if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
   {
-    impl.gui = window.scene.createConnection(
+    cable.gui = window.scene.createConnection(
           *snk.node, *cable.inlet,
           *src.node, *cable.outlet).get();
-    impl.gui->setGraphicsObject(std::make_unique<CustomConnection>(window.scene, *impl.gui));
+    cable.gui->setGraphicsObject(std::make_unique<CustomConnection>(window.scene, *impl.gui));
   }
 
-  quiet_createConnection(std::move(impl));
+  quiet_createConnection(c);
+  */
 }
 
-void DocumentPlugin::updateConnection(const Cable& before, Cable after)
+void DocumentPlugin::updateConnection(const Cable& cable, CableData)
 {
+  /*
   auto cmd = start_command();
   auto it = ossia::find_if(cables, [&] (const auto& c) { return c.cable == before; });
   if(it != cables.end())
@@ -139,29 +141,40 @@ void DocumentPlugin::updateConnection(const Cable& before, Cable after)
   {
     qDebug() << "ERROR! cable not found";
   }
+  */
 }
 
-void DocumentPlugin::removeConnection(const Cable& c)
+void DocumentPlugin::removeConnection(Cable& c)
 {
+  /*
   auto cmd = start_command();
-  auto it = ossia::find_if(cables, [&] (const auto& other) { return other.cable == c; });
+
+  auto it = cables.find(c.id());
   if(it != cables.end())
   {
     if(it->gui)
       window.scene.deleteConnection(*it->gui);
-    cables.erase(it);
+    cables.remove(c);
   }
+  */
 }
 
-void DocumentPlugin::quiet_createConnection(ConnectionImpl i)
+void DocumentPlugin::quiet_createConnection(Cable* i)
 {
-  auto it = ossia::find_if(cables, [&] (const auto& other) { return other.cable == i.cable; });
+  /*
+  auto it = cables.find(i->id());
   if(it == cables.end())
-    cables.push_back(std::move(i));
+    cables.add(i);
+  else
+  {
+    qDebug("trying to add existing cable!!");
+  }
+  */
 }
 
-void DocumentPlugin::quiet_updateConnection(const Cable& before, Cable after)
+void DocumentPlugin::quiet_updateConnection(const Cable& before, CableData after)
 {
+  /*
   auto it = ossia::find_if(cables, [&] (const auto& c) { return c.cable == before; });
   if(it != cables.end())
   {
@@ -171,19 +184,23 @@ void DocumentPlugin::quiet_updateConnection(const Cable& before, Cable after)
   {
     qDebug() << "ERROR! cable not found";
   }
+  */
 }
 
 void DocumentPlugin::quiet_removeConnection(const Cable& c)
 {
+  /*
   auto it = ossia::find_if(cables, [&] (const auto& other) { return other.cable == c; });
   if(it != cables.end())
   {
     cables.erase(it);
   }
+  */
 }
 
 void DocumentPlugin::on_connectionCreated(QtNodes::Connection& c)
 {
+  /*
   if(m_applyingCommand)
     return;
 
@@ -212,10 +229,12 @@ void DocumentPlugin::on_connectionCreated(QtNodes::Connection& c)
 
   con(c, &QtNodes::Connection::updated,
       this, &DocumentPlugin::on_connectionUpdated);
+      */
 }
 
 void DocumentPlugin::on_connectionUpdated(QtNodes::Connection& c)
 {
+  /*
   if(m_applyingCommand)
     return;
   auto in = c.getNode(QtNodes::PortType::In);
@@ -285,10 +304,12 @@ void DocumentPlugin::on_connectionUpdated(QtNodes::Connection& c)
     }
 
   }
+  */
 }
 
 void DocumentPlugin::on_connectionDeleted(QtNodes::Connection& c)
 {
+  /*
   if(m_applyingCommand)
     return;
   auto existing_it = ossia::find_if(cables, [&] (const auto& con) { return con.gui == &c; });
@@ -304,6 +325,7 @@ void DocumentPlugin::on_connectionDeleted(QtNodes::Connection& c)
 
     quiet_removeConnection(existing_it->cable);
   }
+  */
 }
 
 void DocumentPlugin::on_connectionTypeChanged(QList<QtNodes::Connection*> c, CableType t)

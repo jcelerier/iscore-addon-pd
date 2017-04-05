@@ -102,12 +102,23 @@ void DataStreamWriter::write<Dataflow::Port>(Dataflow::Port& p)
 }
 
 template<>
-void DataStreamReader::read<Dataflow::Cable>(const Dataflow::Cable& p)
+void DataStreamReader::read<Dataflow::CableData>(const Dataflow::CableData& p)
 {
   m_stream << p.type << p.source << p.sink << p.outlet << p.inlet;
 }
 template<>
-void DataStreamWriter::write<Dataflow::Cable>(Dataflow::Cable& p)
+void DataStreamWriter::write<Dataflow::CableData>(Dataflow::CableData& p)
 {
   m_stream >> p.type >> p.source >> p.sink >> p.outlet >> p.inlet;
+}
+
+template<>
+void DataStreamReader::read<Dataflow::Cable>(const Dataflow::Cable& p)
+{
+  m_stream << (const Dataflow::CableData&)p;
+}
+template<>
+void DataStreamWriter::write<Dataflow::Cable>(Dataflow::Cable& p)
+{
+  m_stream >> (Dataflow::CableData&)p;
 }
