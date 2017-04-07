@@ -404,55 +404,71 @@ Component::Component(
     if(auto addr = outlet_addresses[i])
       node->outputs()[i]->address = addr;
   }
-  df.currentExecutionContext->add_node(node);
+  df.execGraph->add_node(node);
 
   m_ossia_process =
-      std::make_shared<ossia::node_process>(df.currentExecutionContext, node);
+      std::make_shared<ossia::node_process>(df.execGraph, node);
 
 
   ///  Connect the cables
   ///
-  /*
-  for(Dataflow::Cable& cable : element.cables)
+  for(auto id : element.cables)
   {
+    std::cerr << "\n\nConnect 1\n";
+    auto& cable = df.cables.at(id);
     // Check if there is already a cable
     if(!cable.exec)
     {
-      auto& source = cable.source;
-      auto& sink = cable.sink;
+      std::cerr << "\n\nConnect 2\n";
+      if(&cable.source.find() == &element)
+        cable.source_node = node;
+      if(&cable.sink.find() == &element)
+        cable.sink_node = node;
 
-      auto& src_ref = source.find();
-      auto& sink_ref = sink.find();
-
-      auto src_comp = iscore::findComponent<DataflowProcessComponent>(src_ref.components());
-      auto snk_comp = iscore::findComponent<DataflowProcessComponent>(sink_ref.components());
-
-      if(src_comp && snk_comp && cable.inlet && cable.outlet)
+      std::cerr << cable.source_node.get() << " && " << cable.sink_node.get() << "\n";
+      if(cable.source_node && cable.sink_node && cable.inlet && cable.outlet)
       {
+        std::cerr << "\n\nConnect 3\n";
+        auto& outlet = cable.source_node->outputs()[*cable.outlet];
+        auto& inlet = cable.sink_node->inputs()[*cable.inlet];
         switch(cable.type)
         {
           case Dataflow::CableType::ImmediateStrict:
           {
-           // cable.exec = ossia:make_edge(immediate_strict_connection{}, f3->outputs()[0], f4->inputs()[0], f3, f4);
-
-
-
+           std::cerr << "\n\nConnect 4\n";
+           cable.exec = ossia::make_edge(
+                 ossia::immediate_strict_connection{},
+                 outlet, inlet, cable.source_node, cable.sink_node);
             break;
           }
           case Dataflow::CableType::ImmediateGlutton:
+          {
+           cable.exec = ossia::make_edge(
+                 ossia::immediate_glutton_connection{},
+                 outlet, inlet, cable.source_node, cable.sink_node);
             break;
+          }
           case Dataflow::CableType::DelayedStrict:
+          {
+           cable.exec = ossia::make_edge(
+                 ossia::delayed_strict_connection{},
+                 outlet, inlet, cable.source_node, cable.sink_node);
             break;
+          }
           case Dataflow::CableType::DelayedGlutton:
+          {
+           cable.exec = ossia::make_edge(
+                 ossia::delayed_glutton_connection{},
+                 outlet, inlet, cable.source_node, cable.sink_node);
             break;
+          }
         }
 
-
-        df.currentExecutionContext->connect(cable.exec);
+        df.execGraph->connect(cable.exec);
       }
     }
   }
-  */
+
 }
 
 PdGraphNode* PdGraphNode::m_currentInstance;

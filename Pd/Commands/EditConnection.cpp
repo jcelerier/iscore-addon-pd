@@ -41,70 +41,75 @@ CreateCable::CreateCable(
     Id<Cable> theCable, CableData dat)
   : m_model{dp}
   , m_cable{std::move(theCable)}
+  , m_dat{std::move(dat)}
 {
 
 }
 
 void CreateCable::undo() const
 {
-  /*
-  m_model.find().removeConnection(m_cable);
-
-  auto& src = m_cable.source.find().cables;
+  auto& src = m_dat.source.find().cables;
   src.erase(ossia::find(src, m_cable));
 
-  auto& sink = m_cable.sink.find().cables;
+  auto& sink = m_dat.sink.find().cables;
   sink.erase(ossia::find(sink, m_cable));
-  */
+
+  m_model.find().removeConnection(m_cable);
 }
 
 void CreateCable::redo() const
 {
-//  m_model.find().createConnection(m_cable);
-//  m_cable.source.find().cables.push_back(m_cable);
-//  m_cable.sink.find().cables.push_back(m_cable);
+  auto& model = m_model.find();
+  auto c = new Cable{m_cable, m_dat};
+  model.quiet_createConnection(c);
+  model.createGuiConnection(*c);
+
+  m_dat.source.find().cables.push_back(m_cable);
+  m_dat.sink.find().cables.push_back(m_cable);
 }
 
 void CreateCable::serializeImpl(DataStreamInput& s) const
 {
-  s << m_model << m_cable;
+  s << m_model << m_cable << m_dat;
 }
 
 void CreateCable::deserializeImpl(DataStreamOutput& s)
 {
-  s >> m_model >> m_cable;
+  s >> m_model >> m_cable >> m_dat;
 }
 
 
 
 UpdateCable::UpdateCable(
-    const Dataflow::DocumentPlugin& dp,
-    Id<Cable> theCable, CableData oldDat, CableData newDat)
+    const Dataflow::DocumentPlugin& dp, Cable& cable, CableData newDat)
   : m_model{dp}
- // , m_old{std::move(oldCable)}
- // , m_new{std::move(newCable)}
+  , m_cable{cable.id()}
+  , m_old{cable}
+  , m_new{std::move(newDat)}
 {
 
 }
 
 void UpdateCable::undo() const
 {
-//  m_model.find().updateConnection(m_new, m_old);
+  auto& dp = m_model.find();
+  dp.updateConnection(dp.cables.at(m_cable), m_old);
 }
 
 void UpdateCable::redo() const
 {
-//  m_model.find().updateConnection(m_old, m_new);
+  auto& dp = m_model.find();
+  dp.updateConnection(dp.cables.at(m_cable), m_new);
 }
 
 void UpdateCable::serializeImpl(DataStreamInput& s) const
 {
-  s << m_model << m_old << m_new;
+  s << m_model << m_cable << m_old << m_new;
 }
 
 void UpdateCable::deserializeImpl(DataStreamOutput& s)
 {
-  s >> m_model >> m_old >> m_new;
+  s >> m_model >> m_cable >> m_old >> m_new;
 }
 
 

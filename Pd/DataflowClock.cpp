@@ -8,7 +8,9 @@
 #include <Engine/Executor/ConstraintComponent.hpp>
 #include <Pd/DocumentPlugin.hpp>
 #include <Pd/Executor/PdExecutor.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <portaudio.h>
+#include <ossia/dataflow/audio_address.hpp>
 namespace Dataflow
 {
 Clock::Clock(
@@ -31,9 +33,13 @@ Clock::Clock(
 
 Clock::~Clock()
 {
-  for(auto& cbl : m_plug.cables)
+  for(Cable& cbl : m_plug.cables)
+  {
+    cbl.source_node.reset();
+    cbl.sink_node.reset();
     cbl.exec.reset();
-  m_plug.currentExecutionContext = std::make_shared<ossia::graph>();
+  }
+  m_plug.execGraph = std::make_shared<ossia::graph>();
   Pa_Terminate();
 }
 
@@ -46,66 +52,75 @@ int Clock::PortAudioCallback(
 {
   auto& clock = *static_cast<Clock*>(userData);
 
-  const ossia::time_value rate{1000000. * 64. / 44100.};
-  clock.m_cur->baseConstraint().OSSIAConstraint()->tick(rate);
-
-  auto st = clock.m_plug.currentExecutionContext->state();
-
+  auto float_input = ((float **) input);
   auto float_output = ((float **) output);
-  for(int i = 0; i < 2; i++)
+
+  // Prepare audio inputs
+  const int n_in_channels = clock.m_plug.audio_ins.size();
+  for(int i = 0; i < n_in_channels; i++)
   {
+    clock.m_plug.audio_ins[i]->audio = {float_input[i], frameCount};
+  }
+
+  // Prepare audio outputs
+  const int n_out_channels = clock.m_plug.audio_outs.size();
+  for(int i = 0; i < n_out_channels; i++)
+  {
+    clock.m_plug.audio_outs[i]->audio = {float_output[i], frameCount};
+
     for(int j = 0; j < frameCount; j++)
     {
       float_output[i][j] = 0;
-    }
+   }
   }
 
-  auto& ao = clock.m_plug.audio_outs;
-  for(int i = 0; i < std::min((int)ao.size(), 2); i++)
-  {
-    auto it = st.localState.find(ao[i]);
-    if(it != st.localState.end())
-    {
-      if(ossia::audio_port* audio = it->second.target<ossia::audio_port>())
-      {
-        for(const auto& vec : audio->samples)
-        {
-          for(int j = 0; j < std::min(frameCount, vec.size()); j++)
-            float_output[i][j] += vec[j];
-        }
-      }
-    }
-  }
+  // Run a tick
+  const ossia::time_value rate{1000000. * 64. / 44100.};
+  clock.m_plug.execState.clear();
 
-
+  clock.m_cur->baseConstraint().OSSIAConstraint()->tick(rate);
+  clock.m_plug.execGraph->state(clock.m_plug.execState);
+  clock.m_plug.execState.commit();
   return 0;
-
 }
 
 void Clock::play_impl(
     const TimeVal& t,
     Engine::Execution::BaseScenarioElement& bs)
 {
+  std::stringstream s;
+  boost::write_graphviz(s, m_plug.execGraph->m_graph, [&] (auto& out, const auto& v) {
+      out << "[label=\"" << (void*)m_plug.execGraph->m_graph[v].get() << "\"]";
+  },
+  [] (auto&&...) {});
+
+  std::cerr << s.str() << std::endl;
   m_cur = &bs;
 
   m_default.play(t);
 
-  PaStreamParameters outputParameters;
+  PaStreamParameters inputParameters;
+  inputParameters.device = Pa_GetDefaultInputDevice();
+  inputParameters.channelCount = m_plug.audio_ins.size();
+  inputParameters.sampleFormat = paFloat32 | paNonInterleaved;
+  inputParameters.suggestedLatency = 0.01;
+  inputParameters.hostApiSpecificStreamInfo = nullptr;
 
+  PaStreamParameters outputParameters;
   outputParameters.device = Pa_GetDefaultOutputDevice();
-  outputParameters.channelCount = 2;
+  outputParameters.channelCount = m_plug.audio_outs.size();
   outputParameters.sampleFormat = paFloat32 | paNonInterleaved;
   outputParameters.suggestedLatency = 0.01;
-  outputParameters.hostApiSpecificStreamInfo = 0;
+  outputParameters.hostApiSpecificStreamInfo = nullptr;
 
   auto ec = Pa_OpenStream(&stream,
-                            nullptr,
-                            &outputParameters,
-                            44100,
-                            64,
-                            paNoFlag,
-                            &PortAudioCallback,
-                            this);
+                          &inputParameters,
+                          &outputParameters,
+                          44100,
+                          64,
+                          paNoFlag,
+                          &PortAudioCallback,
+                          this);
   Pa_StartStream( stream );
 }
 

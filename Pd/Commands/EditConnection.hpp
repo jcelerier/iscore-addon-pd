@@ -57,7 +57,7 @@ class UpdateCable final : public iscore::Command
   public:
     UpdateCable(
       const Dataflow::DocumentPlugin& dp,
-      Id<Cable> theCable, CableData oldDat, CableData newDat);
+      Cable& theCable, CableData newDat);
 
   void undo() const override;
   void redo() const override;

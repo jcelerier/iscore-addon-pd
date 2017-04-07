@@ -11,6 +11,7 @@
 #include <ossia/network/local/local.hpp>
 #include <ossia/dataflow/graph.hpp>
 #include <boost/bimap.hpp>
+namespace ossia { class audio_address; class midi_generic_address; }
 namespace Dataflow
 {
 
@@ -19,8 +20,11 @@ class DocumentPlugin final :
 {
   Q_OBJECT
 
+  void createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out);
+  void updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out, Cable&);
 public:
-  std::shared_ptr<ossia::graph> currentExecutionContext;
+  std::shared_ptr<ossia::graph> execGraph;
+  ossia::execution_state execState;
 
   explicit DocumentPlugin(
       const iscore::DocumentContext& ctx,
@@ -32,9 +36,9 @@ public:
   void reload();
 
   // Model -> UI
-  void createConnection(Id<Cable>, CableData c);
+  void createGuiConnection(Cable& c);
   void updateConnection(const Cable& cable, CableData);
-  void removeConnection(Cable& c);
+  void removeConnection(Id<Cable> c);
 
   void quiet_createConnection(Cable*);
   void quiet_updateConnection(const Cable& cable, CableData);
@@ -57,12 +61,12 @@ public:
   iscore::QuietOngoingCommandDispatcher m_dispatcher;
 
   mutable ossia::net::generic_device audiodev;
-  mutable ossia::net::generic_device mididev;
+  mutable ossia::net::generic_device midi_dev;
 
-  std::vector<ossia::net::address_base*> audio_ins;
-  std::vector<ossia::net::address_base*> audio_outs;
-  std::vector<ossia::net::address_base*> midi_ins;
-  std::vector<ossia::net::address_base*> midi_outs;
+  std::vector<ossia::audio_address*> audio_ins;
+  std::vector<ossia::audio_address*> audio_outs;
+  std::vector<ossia::midi_generic_address*> midi_ins;
+  std::vector<ossia::midi_generic_address*> midi_outs;
   struct temp_bool {
     bool& b;
     temp_bool(bool& bo): b{bo} { b = true; }

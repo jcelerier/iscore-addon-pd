@@ -33,8 +33,11 @@ struct Cable
   Cable() = delete;
   Cable(const Cable&) = delete;
   Cable(Id<Cable> c): IdentifiedObject{c, "Cable", nullptr} { }
+  Cable(Id<Cable> c, CableData data): IdentifiedObject{c, "Cable", nullptr}, CableData{data} { }
 
   QtNodes::Connection* gui{};
+  std::shared_ptr<ossia::graph_node> source_node;
+  std::shared_ptr<ossia::graph_node> sink_node;
   std::shared_ptr<ossia::graph_edge> exec;
 };
 

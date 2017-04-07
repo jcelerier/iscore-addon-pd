@@ -6,8 +6,19 @@
 #include <Pd/Commands/EditConnection.hpp>
 #include <Explorer/DocumentPlugin/DeviceDocumentPlugin.hpp>
 #include <Engine/iscore2OSSIA.hpp>
+#include <ossia/dataflow/audio_address.hpp>
+#include <iscore/tools/IdentifierGeneration.hpp>
 namespace Dataflow
 {
+template<typename Address>
+auto create_address(ossia::net::node_base& root, std::string name)
+{
+  auto& node = ossia::net::create_node(root, name);
+  auto addr = new Address(node);
+  node.setAddress(std::unique_ptr<Address>(addr));
+  return addr;
+}
+
 DocumentPlugin::DocumentPlugin(
         const iscore::DocumentContext& ctx,
         Id<iscore::DocumentPlugin> id,
@@ -15,7 +26,7 @@ DocumentPlugin::DocumentPlugin(
     iscore::DocumentPlugin{ctx, std::move(id), "PdDocPlugin", parent},
     m_dispatcher{ctx.commandStack},
     audiodev{std::make_unique<ossia::net::local_protocol>(), "audio"},
-    mididev{std::make_unique<ossia::net::local_protocol>(), "midi"}
+    midi_dev{std::make_unique<ossia::net::local_protocol>(), "midi"}
 {
   con(window.scene, &QtNodes::FlowScene::connectionCreated,
       this, &DocumentPlugin::on_connectionCreated);
@@ -29,14 +40,15 @@ DocumentPlugin::DocumentPlugin(
   con(window, &DataflowWindow::typeChanged,
       this, &DocumentPlugin::on_connectionTypeChanged);
 
-  audio_ins.push_back(ossia::net::create_node(audiodev.getRootNode(), "/in/0").createAddress());
-  audio_ins.push_back(ossia::net::create_node(audiodev.getRootNode(), "/in/1").createAddress());
-  audio_outs.push_back(ossia::net::create_node(audiodev.getRootNode(), "/out/0").createAddress());
-  audio_outs.push_back(ossia::net::create_node(audiodev.getRootNode(), "/out/1").createAddress());
-  midi_ins.push_back(ossia::net::create_node(mididev.getRootNode(), "/in/0").createAddress());
-  midi_outs.push_back(ossia::net::create_node(mididev.getRootNode(), "/out/0").createAddress());
+  audio_ins.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/in/0"));
+  audio_ins.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/in/1"));
+  audio_outs.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/out/0"));
+  audio_outs.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/out/1"));
 
-  currentExecutionContext = std::make_shared<ossia::graph>();
+  midi_ins.push_back(create_address<ossia::midi_generic_address>(midi_dev.getRootNode(), "/0/in"));
+  midi_outs.push_back(create_address<ossia::midi_generic_address>(midi_dev.getRootNode(), "/0/out"));
+
+  execGraph = std::make_shared<ossia::graph>();
 }
 
 DocumentPlugin::~DocumentPlugin()
@@ -47,20 +59,17 @@ DocumentPlugin::~DocumentPlugin()
 void DocumentPlugin::reload()
 {
   window.scene.clearScene();
-  /*
+
+  for(Cable& cable : cables) cable.gui = nullptr;
+
 
   auto processes = m_context.document.findChildren<Dataflow::ProcessModel*>();
   for(auto proc : processes)
   {
+    auto cmd = start_command(); // To prevent connection deletion signals
     auto model = std::make_unique<CustomDataModel>(*proc);
     proc->node = &window.scene.createNode(std::move(model));
     proc->node->nodeGraphicsObject().setPos(proc->pos());
-
-    for(auto& cbl : proc->cables)
-    {
-      // Try to re-create all the registered cables in the process
-      createConnection(cbl);
-    }
 
     connect(proc, &Dataflow::ProcessModel::identified_object_destroying,
             this, [=] {
@@ -76,38 +85,45 @@ void DocumentPlugin::reload()
       }
     });
   }
+  qDebug() << cables.size();
 
-  for(auto& cable : cables)
+  for(Cable& cable : cables)
   {
+    qDebug() << "1:" << cables.size();
     auto& src = cable.source.find();
     auto& snk = cable.sink.find();
     if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
     {
+      auto cmd = start_command(); // To prevent connection deletion signals
+      qDebug() << "2:" << cables.size();
       cable.gui = window.scene.createConnection(
             *snk.node, *cable.inlet,
             *src.node, *cable.outlet).get();
       auto ct = std::make_unique<CustomConnection>(window.scene, *cable.gui);
 
       con(*ct, &CustomConnection::selectionChanged,
-          this, [=] (bool b) {
-          if(b) window.cableSelected(*pair.gui);
-          else window.cableDeselected(*pair.gui);
+          this, [=,&cable] (bool b) {
+          if(b) window.cableSelected(*cable.gui);
+          else window.cableDeselected(*cable.gui);
       });
+
+      qDebug() << "3:" << cables.size();
       cable.gui->setGraphicsObject(std::move(ct));
+
+      qDebug() << "4:" << cables.size();
     }
     else
     {
       cable.gui = nullptr;
     }
   }
-  **/
+
 }
 
-void DocumentPlugin::createConnection(Id<Cable>, CableData c)
+void DocumentPlugin::createGuiConnection(Cable& cable)
 {
-  /*
   auto cmd = start_command();
-  auto& cable = *c;
+
   auto& src = cable.source.find();
   auto& snk = cable.sink.find();
 
@@ -116,11 +132,8 @@ void DocumentPlugin::createConnection(Id<Cable>, CableData c)
     cable.gui = window.scene.createConnection(
           *snk.node, *cable.inlet,
           *src.node, *cable.outlet).get();
-    cable.gui->setGraphicsObject(std::make_unique<CustomConnection>(window.scene, *impl.gui));
+    cable.gui->setGraphicsObject(std::make_unique<CustomConnection>(window.scene, *cable.gui));
   }
-
-  quiet_createConnection(c);
-  */
 }
 
 void DocumentPlugin::updateConnection(const Cable& cable, CableData)
@@ -144,32 +157,23 @@ void DocumentPlugin::updateConnection(const Cable& cable, CableData)
   */
 }
 
-void DocumentPlugin::removeConnection(Cable& c)
+void DocumentPlugin::removeConnection(Id<Cable> c)
 {
-  /*
   auto cmd = start_command();
 
-  auto it = cables.find(c.id());
+  auto it = cables.find(c);
   if(it != cables.end())
   {
     if(it->gui)
       window.scene.deleteConnection(*it->gui);
     cables.remove(c);
   }
-  */
 }
 
 void DocumentPlugin::quiet_createConnection(Cable* i)
 {
-  /*
-  auto it = cables.find(i->id());
-  if(it == cables.end())
-    cables.add(i);
-  else
-  {
-    qDebug("trying to add existing cable!!");
-  }
-  */
+  ISCORE_ASSERT(cables.find(i->id()) == cables.end());
+  cables.add(i);
 }
 
 void DocumentPlugin::quiet_updateConnection(const Cable& before, CableData after)
@@ -198,43 +202,78 @@ void DocumentPlugin::quiet_removeConnection(const Cable& c)
   */
 }
 
+void DocumentPlugin::createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out)
+{
+  auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
+  auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
+  CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
+  auto cable = new Cable{getStrongId(cables),
+      CableData{{},
+      *out_model->process,
+      *in_model->process,
+      (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
+      (std::size_t)c.getPortIndex(QtNodes::PortType::In)}};
+  cable->gui = &c;
+
+  // The command is sent but not executed since the cable has already been created
+  // by the framework
+  disp.submitCommand<CreateCable>(*this, cable->id(), (CableData) *cable);
+
+  in_model->process->cables.push_back(cable->id());
+  out_model->process->cables.push_back(cable->id());
+
+  quiet_createConnection(cable);
+}
+
+void DocumentPlugin::updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out, Cable& cur)
+{
+  auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
+  auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
+  CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
+
+  CableData next{cur.type,
+             *out_model->process,
+             *in_model->process,
+             (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
+             (std::size_t)c.getPortIndex(QtNodes::PortType::In)};
+
+  { // Remove cable in previous nodes
+    auto& source = cur.source.find();
+    source.cables.erase(ossia::find(source.cables, cur.id()));
+    auto& sink = cur.sink.find();
+    sink.cables.erase(ossia::find(sink.cables, cur.id()));
+  }
+
+  { // Add cable in new nodes
+    in_model->process->cables.push_back(cur.id());
+    out_model->process->cables.push_back(cur.id());
+  }
+
+  (CableData&)cur = next;
+  disp.submitCommand<UpdateCable>(*this, cur, std::move(next));
+
+  //quiet_updateConnection(std::move(previous), std::move(next));
+}
+
 void DocumentPlugin::on_connectionCreated(QtNodes::Connection& c)
 {
-  /*
   if(m_applyingCommand)
     return;
 
   // If input & output, create cable right now. Else create it in first update.
-
   auto in = c.getNode(QtNodes::PortType::In);
   auto out = c.getNode(QtNodes::PortType::Out);
   if(in && out)
   {
-    auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
-    auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
-    CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
-    Cable cable{{},
-            *out_model->process,
-          *in_model->process,
-          (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
-          (std::size_t)c.getPortIndex(QtNodes::PortType::In)};
-
-    disp.submitCommand<CreateCable>(*this, cable);
-
-    in_model->process->cables.push_back(cable);
-    out_model->process->cables.push_back(cable);
-
-    quiet_createConnection({&c, std::move(cable)});
+    createCableFromGuiImpl(c, in, out);
   }
 
   con(c, &QtNodes::Connection::updated,
       this, &DocumentPlugin::on_connectionUpdated);
-      */
 }
 
 void DocumentPlugin::on_connectionUpdated(QtNodes::Connection& c)
 {
-  /*
   if(m_applyingCommand)
     return;
   auto in = c.getNode(QtNodes::PortType::In);
@@ -245,21 +284,7 @@ void DocumentPlugin::on_connectionUpdated(QtNodes::Connection& c)
   {
     if(in && out)
     {
-      auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
-      auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
-      CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
-      Cable cable{{},
-            *out_model->process,
-            *in_model->process,
-            (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
-            (std::size_t)c.getPortIndex(QtNodes::PortType::In)};
-
-      disp.submitCommand<CreateCable>(*this, cable);
-
-      in_model->process->cables.push_back(cable);
-      out_model->process->cables.push_back(cable);
-
-      quiet_createConnection({&c, std::move(cable)});
+      createCableFromGuiImpl(c, in, out);
     }
     else
     {
@@ -271,30 +296,7 @@ void DocumentPlugin::on_connectionUpdated(QtNodes::Connection& c)
   {
     if(in && out)
     {
-      auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
-      auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
-      CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
-      Cable previous = existing_it->cable;
-      Cable next{previous.type,
-                 *out_model->process,
-                 *in_model->process,
-                 (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
-                 (std::size_t)c.getPortIndex(QtNodes::PortType::In)};
-
-      disp.submitCommand<UpdateCable>(*this, previous, next);
-
-      { // Remove cable in previous nodes
-        auto& source = previous.source.find();
-        source.cables.erase(ossia::find(source.cables, previous));
-        auto& sink = previous.sink.find();
-        sink.cables.erase(ossia::find(sink.cables, previous));
-      }
-      { // Add cable in new nodes
-        in_model->process->cables.push_back(next);
-        out_model->process->cables.push_back(next);
-      }
-
-      quiet_updateConnection(std::move(previous), std::move(next));
+      updateCableFromGuiImpl(c, in, out, *existing_it);
     }
     else
     {
@@ -302,9 +304,7 @@ void DocumentPlugin::on_connectionUpdated(QtNodes::Connection& c)
       // Do nothing ?
       // remove ?
     }
-
   }
-  */
 }
 
 void DocumentPlugin::on_connectionDeleted(QtNodes::Connection& c)
@@ -355,7 +355,7 @@ ossia::net::address_base* DocumentPlugin::resolve(const State::AddressAccessor& 
   }
   else if(addr.address.device == QStringLiteral("midi"))
   {
-    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, mididev)->getAddress();
+    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, midi_dev)->getAddress();
   }
   else
   {

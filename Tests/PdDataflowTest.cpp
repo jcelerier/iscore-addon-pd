@@ -105,30 +105,28 @@ private slots:
 
     execution_state st;
     auto copy_samples = [&] {
-      auto it_l = st.localState.find(l_addr);
-      auto it_r = st.localState.find(r_addr);
-      if(it_l == st.localState.end() || it_r == st.localState.end())
+      auto it_l = st.audioState.find(l_addr);
+      auto it_r = st.audioState.find(r_addr);
+      if(it_l == st.audioState.end() || it_r == st.audioState.end())
       {
         // Just copy silence
         samples.resize(samples.size() + 128);
         return;
       }
 
-      auto audio_l = it_l->second.target<audio_port>();
-      auto audio_r = it_r->second.target<audio_port>();
-      QVERIFY(audio_l);
-      QVERIFY(!audio_l->samples.empty());
-      QVERIFY(audio_r);
-      QVERIFY(!audio_r->samples.empty());
+      auto& audio_l = it_l->second;
+      auto& audio_r = it_r->second;
+      QVERIFY(!audio_l.samples.empty());
+      QVERIFY(!audio_r.samples.empty());
 
       auto pos = samples.size();
       samples.resize(samples.size() + 128);
-      for(auto& arr : audio_l->samples)
+      for(auto& arr : audio_l.samples)
       {
         for(int i = 0; i < 64; i++)
           samples[pos + i * 2] += arr[i];
       }
-      for(auto& arr : audio_r->samples)
+      for(auto& arr : audio_r.samples)
       {
         for(int i = 0; i < 64; i++)
           samples[pos + i * 2 + 1] += arr[i];
@@ -229,8 +227,9 @@ private slots:
       const ossia::time_value rate{1000000. * 64. / 44100.};
       main_constraint->tick(rate);
 
-      st = g.state();
+      g.state(st);
       copy_samples();
+      st.clear();
 
       std::this_thread::sleep_for(std::chrono::microseconds(int64_t(1000000. * 64. / 44100.)));
 

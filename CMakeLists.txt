@@ -25,7 +25,7 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/PdCommandFactory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/EditPort.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/EditPd.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/EditConnection.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/EditConnection.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Executor/PdExecutor.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorFactory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorWidget.hpp"
