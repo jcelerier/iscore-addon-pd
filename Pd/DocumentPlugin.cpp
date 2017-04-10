@@ -85,17 +85,14 @@ void DocumentPlugin::reload()
       }
     });
   }
-  qDebug() << cables.size();
 
   for(Cable& cable : cables)
   {
-    qDebug() << "1:" << cables.size();
     auto& src = cable.source.find();
     auto& snk = cable.sink.find();
     if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
     {
       auto cmd = start_command(); // To prevent connection deletion signals
-      qDebug() << "2:" << cables.size();
       cable.gui = window.scene.createConnection(
             *snk.node, *cable.inlet,
             *src.node, *cable.outlet).get();
@@ -107,10 +104,7 @@ void DocumentPlugin::reload()
           else window.cableDeselected(*cable.gui);
       });
 
-      qDebug() << "3:" << cables.size();
       cable.gui->setGraphicsObject(std::move(ct));
-
-      qDebug() << "4:" << cables.size();
     }
     else
     {

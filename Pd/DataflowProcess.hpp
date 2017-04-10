@@ -44,13 +44,13 @@ public:
 
   std::size_t audioOutlets() const { return m_portCount.audioOut; }
   std::size_t messageOutlets() const { return m_portCount.messageOut; }
-  std::size_t midiOutlets() const { return m_portCount.midiOut; };
+  std::size_t midiOutlets() const { return m_portCount.midiOut; }
 
   const std::vector<Port>& inlets() const;
   const std::vector<Port>& outlets() const;
 
-  CustomDataModel* nodeModel{};
-  QtNodes::Node* node{};
+  QPointer<CustomDataModel> nodeModel{};
+  QPointer<QtNodes::Node> node{};
 
   std::vector<Id<Cable>> cables;
   QPointF pos() const;
