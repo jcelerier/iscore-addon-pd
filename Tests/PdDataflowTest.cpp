@@ -27,20 +27,20 @@ private slots:
   void test_pd()
   {
     using namespace ossia; using namespace ossia::net;
-    generic_device dev{std::make_unique<local_protocol>(), ""};
-    auto& filt_node = create_node(dev.getRootNode(), "/filter");
-    auto filt_addr = filt_node.createAddress(ossia::val_type::FLOAT);
-    filt_addr->pushValue(100);
-    auto& vol_node = create_node(dev.getRootNode(), "/param");
-    auto vol_addr = vol_node.createAddress(ossia::val_type::FLOAT);
-    vol_addr->pushValue(0.5);
-    auto& note_node = create_node(dev.getRootNode(), "/note");
-    auto note_addr = note_node.createAddress(ossia::val_type::FLOAT);
-    note_addr->pushValue(220.);
-    auto& l_node = create_node(dev.getRootNode(), "/l");
-    auto l_addr = l_node.createAddress(ossia::val_type::IMPULSE);
-    auto& r_node = create_node(dev.getRootNode(), "/r");
-    auto r_addr = r_node.createAddress(ossia::val_type::IMPULSE);
+    generic_device dev{std::make_unique<multiplex_protocol>(), ""};
+    auto& filt_node = create_node(dev.get_root_node(), "/filter");
+    auto filt_addr = filt_node.create_address(ossia::val_type::FLOAT);
+    filt_addr->push_value(100);
+    auto& vol_node = create_node(dev.get_root_node(), "/param");
+    auto vol_addr = vol_node.create_address(ossia::val_type::FLOAT);
+    vol_addr->push_value(0.5);
+    auto& note_node = create_node(dev.get_root_node(), "/note");
+    auto note_addr = note_node.create_address(ossia::val_type::FLOAT);
+    note_addr->push_value(220.);
+    auto& l_node = create_node(dev.get_root_node(), "/l");
+    auto l_addr = l_node.create_address(ossia::val_type::IMPULSE);
+    auto& r_node = create_node(dev.get_root_node(), "/r");
+    auto r_addr = r_node.create_address(ossia::val_type::IMPULSE);
 
     auto graph = std::make_shared<ossia::graph>();
     ossia::graph& g = *graph;
@@ -138,8 +138,8 @@ private slots:
     auto main_end_node = std::make_shared<time_node>();
 
     // create time_events inside TimeNodes and make them interactive to the /play address
-    auto main_start_event = *(main_start_node->emplace(main_start_node->timeEvents().begin(), {}));
-    auto main_end_event = *(main_end_node->emplace(main_end_node->timeEvents().begin(), {}));
+    auto main_start_event = *(main_start_node->emplace(main_start_node->get_time_events().begin(), {}));
+    auto main_end_event = *(main_end_node->emplace(main_end_node->get_time_events().begin(), {}));
 
     const time_value granul{1000. * 64. / 44100.};
     // create the main time_constraint
@@ -159,29 +159,29 @@ private slots:
 
     auto main_scenario_ptr = std::make_unique<scenario>();
     scenario& main_scenario = *main_scenario_ptr;
-    main_constraint->addTimeProcess(std::move(main_scenario_ptr));
+    main_constraint->add_time_process(std::move(main_scenario_ptr));
 
     auto make_constraint = [&] (auto time, auto s, auto e)
     {
       time_value tv{(double)time};
       auto cst = std::make_shared<time_constraint>(cb_2, *s, *e, tv, tv, tv);
-      cst->setGranularity(granul);
-      s->nextTimeConstraints().push_back(cst);
-      e->previousTimeConstraints().push_back(cst);
-      main_scenario.addTimeConstraint(cst);
+      cst->set_granularity(granul);
+      s->next_time_constraints().push_back(cst);
+      e->previous_time_constraints().push_back(cst);
+      main_scenario.add_time_constraint(cst);
       return cst;
     };
 
     std::vector<std::shared_ptr<time_node>> t(15); std::generate(t.begin(), t.end(), [&] {
       auto tn = std::make_shared<time_node>();
-      main_scenario.addTimeNode(tn);
+      main_scenario.add_time_node(tn);
       return tn;
     });
 
-    t[0] = main_scenario.getStartTimeNode();
+    t[0] = main_scenario.get_start_time_node();
 
     std::vector<std::shared_ptr<time_event>> e(15);
-    for(int i = 0; i < t.size(); i++) e[i] = *t[i]->emplace(t[i]->timeEvents().begin(), {});
+    for(int i = 0; i < t.size(); i++) e[i] = *t[i]->emplace(t[i]->get_time_events().begin(), {});
 
     std::vector<std::shared_ptr<time_constraint>> c(14);
     c[0] = make_constraint(1000, e[0], e[1]);
@@ -203,21 +203,21 @@ private slots:
     c[13] = make_constraint(3000, e[13], e[14]);
 
 
-    c[1]->addTimeProcess(std::make_shared<node_process>(graph, f1));
-    c[3]->addTimeProcess(std::make_shared<node_process>(graph, f2));
-    c[5]->addTimeProcess(std::make_shared<node_process>(graph, f1_2));
+    c[1]->add_time_process(std::make_shared<node_process>(graph, f1));
+    c[3]->add_time_process(std::make_shared<node_process>(graph, f2));
+    c[5]->add_time_process(std::make_shared<node_process>(graph, f1_2));
 
-    c[7]->addTimeProcess(std::make_shared<node_process>(graph, f3));
+    c[7]->add_time_process(std::make_shared<node_process>(graph, f3));
 
-    c[9]->addTimeProcess(std::make_shared<node_process>(graph, f4));
+    c[9]->add_time_process(std::make_shared<node_process>(graph, f4));
 
-    c[11]->addTimeProcess(std::make_shared<node_process>(graph, f5));
-    c[13]->addTimeProcess(std::make_shared<node_process>(graph, f5_2));
+    c[11]->add_time_process(std::make_shared<node_process>(graph, f5));
+    c[13]->add_time_process(std::make_shared<node_process>(graph, f5_2));
 
 
-    main_constraint->setDriveMode(ossia::clock::DriveMode::EXTERNAL);
-    main_constraint->setGranularity(time_value(1000. * 64. / 44100.));
-    main_constraint->setSpeed(1.0);
+    main_constraint->set_drive_mode(ossia::clock::drive_mode::EXTERNAL);
+    main_constraint->set_granularity(time_value(1000. * 64. / 44100.));
+    main_constraint->set_speed(1.0);
 
     main_constraint->offset(0.000000001_tv);
     main_constraint->start();
