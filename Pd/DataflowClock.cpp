@@ -26,9 +26,9 @@ Clock::Clock(
 
   ossia::time_constraint& ossia_cst = *bs->baseConstraint().OSSIAConstraint();
 
-  ossia_cst.setDriveMode(ossia::clock::DriveMode::EXTERNAL);
+  ossia_cst.set_drive_mode(ossia::clock::drive_mode::EXTERNAL);
   // Number of milliseconds in each step -> we tick once per buffer
-  ossia_cst.setGranularity(ossia::time_value(1000. * 64. / 44100.) );
+  ossia_cst.set_granularity(ossia::time_value(1000. * 64. / 44100.) );
 }
 
 Clock::~Clock()

@@ -15,7 +15,7 @@ auto create_address(ossia::net::node_base& root, std::string name)
 {
   auto& node = ossia::net::create_node(root, name);
   auto addr = new Address(node);
-  node.setAddress(std::unique_ptr<Address>(addr));
+  node.set_address(std::unique_ptr<Address>(addr));
   return addr;
 }
 
@@ -25,8 +25,8 @@ DocumentPlugin::DocumentPlugin(
         QObject* parent):
     iscore::DocumentPlugin{ctx, std::move(id), "PdDocPlugin", parent},
     m_dispatcher{ctx.commandStack},
-    audiodev{std::make_unique<ossia::net::local_protocol>(), "audio"},
-    midi_dev{std::make_unique<ossia::net::local_protocol>(), "midi"}
+    audiodev{std::make_unique<ossia::net::multiplex_protocol>(), "audio"},
+    midi_dev{std::make_unique<ossia::net::multiplex_protocol>(), "midi"}
 {
   con(window.scene, &QtNodes::FlowScene::connectionCreated,
       this, &DocumentPlugin::on_connectionCreated);
@@ -40,13 +40,13 @@ DocumentPlugin::DocumentPlugin(
   con(window, &DataflowWindow::typeChanged,
       this, &DocumentPlugin::on_connectionTypeChanged);
 
-  audio_ins.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/in/0"));
-  audio_ins.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/in/1"));
-  audio_outs.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/out/0"));
-  audio_outs.push_back(create_address<ossia::audio_address>(audiodev.getRootNode(), "/out/1"));
+  audio_ins.push_back(create_address<ossia::audio_address>(audiodev.get_root_node(), "/in/0"));
+  audio_ins.push_back(create_address<ossia::audio_address>(audiodev.get_root_node(), "/in/1"));
+  audio_outs.push_back(create_address<ossia::audio_address>(audiodev.get_root_node(), "/out/0"));
+  audio_outs.push_back(create_address<ossia::audio_address>(audiodev.get_root_node(), "/out/1"));
 
-  midi_ins.push_back(create_address<ossia::midi_generic_address>(midi_dev.getRootNode(), "/0/in"));
-  midi_outs.push_back(create_address<ossia::midi_generic_address>(midi_dev.getRootNode(), "/0/out"));
+  midi_ins.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/in"));
+  midi_outs.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/out"));
 
   execGraph = std::make_shared<ossia::graph>();
 }
@@ -85,17 +85,14 @@ void DocumentPlugin::reload()
       }
     });
   }
-  qDebug() << cables.size();
 
   for(Cable& cable : cables)
   {
-    qDebug() << "1:" << cables.size();
     auto& src = cable.source.find();
     auto& snk = cable.sink.find();
     if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
     {
       auto cmd = start_command(); // To prevent connection deletion signals
-      qDebug() << "2:" << cables.size();
       cable.gui = window.scene.createConnection(
             *snk.node, *cable.inlet,
             *src.node, *cable.outlet).get();
@@ -107,10 +104,7 @@ void DocumentPlugin::reload()
           else window.cableDeselected(*cable.gui);
       });
 
-      qDebug() << "3:" << cables.size();
       cable.gui->setGraphicsObject(std::move(ct));
-
-      qDebug() << "4:" << cables.size();
     }
     else
     {
@@ -351,11 +345,11 @@ ossia::net::address_base* DocumentPlugin::resolve(const State::AddressAccessor& 
 {
   if(addr.address.device == QStringLiteral("audio"))
   {
-    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, audiodev)->getAddress();
+    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, audiodev)->get_address();
   }
   else if(addr.address.device == QStringLiteral("midi"))
   {
-    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, midi_dev)->getAddress();
+    return Engine::iscore_to_ossia::findNodeFromPath(addr.address.path, midi_dev)->get_address();
   }
   else
   {
