@@ -309,9 +309,6 @@ void PdGraphNode::run(ossia::execution_state& e)
   }
 
   // Process
-  std::string foo = "foo";
-  add_dzero(foo);
-  libpd_bang(foo.c_str());
   libpd_process_raw(m_inbuf.data(), m_outbuf.data());
 
   // Copy audio outputs. Message inputs are copied in callbacks.
