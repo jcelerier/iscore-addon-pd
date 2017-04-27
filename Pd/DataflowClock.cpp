@@ -50,6 +50,8 @@ int Clock::PortAudioCallback(
     PaStreamCallbackFlags statusFlags,
     void *userData)
 {
+  using idx_t = gsl::span<float>::index_type;
+  const idx_t fc = frameCount;
   auto& clock = *static_cast<Clock*>(userData);
 
   auto float_input = ((float **) input);
@@ -59,14 +61,14 @@ int Clock::PortAudioCallback(
   const int n_in_channels = clock.m_plug.audio_ins.size();
   for(int i = 0; i < n_in_channels; i++)
   {
-    clock.m_plug.audio_ins[i]->audio = {float_input[i], frameCount};
+    clock.m_plug.audio_ins[i]->audio = {float_input[i], fc};
   }
 
   // Prepare audio outputs
   const int n_out_channels = clock.m_plug.audio_outs.size();
   for(int i = 0; i < n_out_channels; i++)
   {
-    clock.m_plug.audio_outs[i]->audio = {float_output[i], frameCount};
+    clock.m_plug.audio_outs[i]->audio = {float_output[i], fc};
 
     for(int j = 0; j < frameCount; j++)
     {
