@@ -10,7 +10,7 @@ class iscore_addon_pd final:
         public iscore::Plugin_QtInterface,
         public iscore::FactoryInterface_QtInterface,
         public iscore::CommandFactory_QtInterface,
-        public iscore::GUIApplicationPlugin_QtInterface
+        public iscore::ApplicationPlugin_QtInterface
 {
         Q_OBJECT
         Q_PLUGIN_METADATA(IID FactoryInterface_QtInterface_iid)
@@ -18,7 +18,7 @@ class iscore_addon_pd final:
                 iscore::Plugin_QtInterface
                 iscore::FactoryInterface_QtInterface
                 iscore::CommandFactory_QtInterface
-                iscore::GUIApplicationPlugin_QtInterface
+                iscore::ApplicationPlugin_QtInterface
                 )
 
     public:
@@ -32,7 +32,7 @@ class iscore_addon_pd final:
         // CommandFactory_QtInterface interface
         std::pair<const CommandGroupKey, CommandGeneratorMap> make_commands() override;
 
-        // Defined in GUIApplicationPlugin_QtInterface
+        // Defined in ApplicationPlugin_QtInterface
         iscore::GUIApplicationPlugin* make_applicationPlugin(
                 const iscore::GUIApplicationContext& app) override;
 
