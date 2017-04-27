@@ -2,7 +2,6 @@
 #include <Pd/PdMetadata.hpp>
 #include <Pd/DataflowProcess.hpp>
 #include <Process/Process.hpp>
-#include <Process/LayerModel.hpp>
 #include <Process/WidgetLayer/WidgetProcessFactory.hpp>
 #include <Process/WidgetLayer/WidgetLayerPresenter.hpp>
 #include <Process/WidgetLayer/WidgetLayerView.hpp>
@@ -18,7 +17,7 @@ namespace Pd
 class ProcessModel final : public Dataflow::ProcessModel
 {
         ISCORE_SERIALIZE_FRIENDS
-        MODEL_METADATA_IMPL(Pd::ProcessModel)
+        PROCESS_METADATA_IMPL(Pd::ProcessModel)
     Q_OBJECT
     public:
         explicit ProcessModel(

@@ -37,7 +37,6 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
     return instantiate_factories<
             iscore::ApplicationContext,
          FW<Process::ProcessModelFactory, Pd::ProcessFactory>
-        , FW<Process::LayerFactory, Pd::LayerFactory>
         , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
         , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
@@ -54,7 +53,7 @@ iscore_addon_pd::iscore_addon_pd()
 }
 
 iscore::GUIApplicationPlugin*
-iscore_addon_pd::make_applicationPlugin(
+iscore_addon_pd::make_guiApplicationPlugin(
         const iscore::GUIApplicationContext& app)
 {
     return new Dataflow::ApplicationPlugin{app};

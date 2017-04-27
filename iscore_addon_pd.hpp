@@ -33,7 +33,7 @@ class iscore_addon_pd final:
         std::pair<const CommandGroupKey, CommandGeneratorMap> make_commands() override;
 
         // Defined in ApplicationPlugin_QtInterface
-        iscore::GUIApplicationPlugin* make_applicationPlugin(
+        iscore::GUIApplicationPlugin* make_guiApplicationPlugin(
                 const iscore::GUIApplicationContext& app) override;
 
         iscore::Version version() const override;
