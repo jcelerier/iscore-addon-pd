@@ -21,7 +21,7 @@ class DocumentPlugin final :
   Q_OBJECT
 
   void createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out);
-  void updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out, Cable&);
+  void updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out, Process::Cable&);
 public:
   std::shared_ptr<ossia::graph> execGraph;
   ossia::execution_state execState;
@@ -36,19 +36,19 @@ public:
   void reload();
 
   // Model -> UI
-  void createGuiConnection(Cable& c);
-  void updateConnection(const Cable& cable, CableData);
-  void removeConnection(Id<Cable> c);
+  void createGuiConnection(Process::Cable& c);
+  void updateConnection(const Process::Cable& cable, Process::CableData);
+  void removeConnection(Id<Process::Cable> c);
 
-  void quiet_createConnection(Cable*);
-  void quiet_updateConnection(const Cable& cable, CableData);
-  void quiet_removeConnection(const Cable& c);
+  void quiet_createConnection(Process::Cable*);
+  void quiet_updateConnection(const Process::Cable& cable, Process::CableData);
+  void quiet_removeConnection(const Process::Cable& c);
 
   // UI -> Model
   void on_connectionCreated(QtNodes::Connection& c);
   void on_connectionUpdated(QtNodes::Connection& c);
   void on_connectionDeleted(QtNodes::Connection& c);
-  void on_connectionTypeChanged(QList<QtNodes::Connection*> c, CableType t);
+  void on_connectionTypeChanged(QList<QtNodes::Connection*> c, Process::CableType t);
   void on_nodeMoved(QtNodes::Node& c, const QPointF& pos);
   void on_released(QPointF);
 
@@ -56,7 +56,7 @@ public:
 
   DataflowWindow window;
 
-  iscore::EntityMap<Cable> cables;
+  iscore::EntityMap<Process::Cable> cables;
 
   iscore::QuietOngoingCommandDispatcher m_dispatcher;
 

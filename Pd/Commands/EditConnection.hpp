@@ -35,7 +35,7 @@ class CreateCable final : public iscore::Command
   public:
     CreateCable(
       const Dataflow::DocumentPlugin& dp,
-      Id<Cable> theCable, CableData dat);
+      Id<Process::Cable> theCable, Process::CableData dat);
 
   void undo() const override;
   void redo() const override;
@@ -46,8 +46,8 @@ protected:
 
 private:
   Path<Dataflow::DocumentPlugin> m_model;
-  Id<Cable> m_cable;
-  CableData m_dat;
+  Id<Process::Cable> m_cable;
+  Process::CableData m_dat;
 };
 
 class UpdateCable final : public iscore::Command
@@ -57,7 +57,7 @@ class UpdateCable final : public iscore::Command
   public:
     UpdateCable(
       const Dataflow::DocumentPlugin& dp,
-      Cable& theCable, CableData newDat);
+      Process::Cable& theCable, Process::CableData newDat);
 
   void undo() const override;
   void redo() const override;
@@ -68,8 +68,8 @@ protected:
 
 private:
   Path<Dataflow::DocumentPlugin> m_model;
-  Id<Cable> m_cable;
-  CableData m_old, m_new;
+  Id<Process::Cable> m_cable;
+  Process::CableData m_old, m_new;
 };
 
 class RemoveCable final : public iscore::Command
@@ -79,7 +79,7 @@ class RemoveCable final : public iscore::Command
   public:
     RemoveCable(
       const Dataflow::DocumentPlugin& dp,
-      const Cable& theCable);
+      const Process::Cable& theCable);
 
   void undo() const override;
   void redo() const override;
@@ -90,7 +90,7 @@ protected:
 
 private:
   Path<Dataflow::DocumentPlugin> m_model;
-  Id<Cable> m_cable;
-  CableData m_data;
+  Id<Process::Cable> m_cable;
+  Process::CableData m_data;
 };
 }

@@ -23,7 +23,7 @@ class CustomConnection : public QtNodes::ConnectionGraphicsObject
 public:
   using QtNodes::ConnectionGraphicsObject::ConnectionGraphicsObject;
 
-  CableType cableType;
+  Process::CableType cableType;
 
 signals:
   void selectionChanged(bool);
@@ -173,10 +173,10 @@ public:
     if(selected.size() == 1)
     {
       switch(go->cableType) {
-        case CableType::ImmediateGlutton: a1->setChecked(true); break;
-        case CableType::ImmediateStrict: a2->setChecked(true); break;
-        case CableType::DelayedGlutton: a3->setChecked(true); break;
-        case CableType::DelayedStrict: a4->setChecked(true); break;
+        case Process::CableType::ImmediateGlutton: a1->setChecked(true); break;
+        case Process::CableType::ImmediateStrict: a2->setChecked(true); break;
+        case Process::CableType::DelayedGlutton: a3->setChecked(true); break;
+        case Process::CableType::DelayedStrict: a4->setChecked(true); break;
         default: break;
       }
     }
@@ -194,10 +194,10 @@ public:
 
   void on_typeChanged()
   {
-    if(a1->isChecked()) emit typeChanged(selected, CableType::ImmediateGlutton);
-    else if (a2->isChecked()) emit typeChanged(selected, CableType::ImmediateStrict);
-    else if (a3->isChecked()) emit typeChanged(selected, CableType::DelayedGlutton);
-    else if (a4->isChecked()) emit typeChanged(selected, CableType::DelayedStrict);
+    if(a1->isChecked()) emit typeChanged(selected, Process::CableType::ImmediateGlutton);
+    else if (a2->isChecked()) emit typeChanged(selected, Process::CableType::ImmediateStrict);
+    else if (a3->isChecked()) emit typeChanged(selected, Process::CableType::DelayedGlutton);
+    else if (a4->isChecked()) emit typeChanged(selected, Process::CableType::DelayedStrict);
 
   }
 
@@ -214,7 +214,7 @@ public:
 
   QList<QtNodes::Connection*> selected;
 signals:
-  void typeChanged(QList<QtNodes::Connection*>, CableType);
+  void typeChanged(QList<QtNodes::Connection*>, Process::CableType);
 
 private:
 

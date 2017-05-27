@@ -33,7 +33,7 @@ Clock::Clock(
 
 Clock::~Clock()
 {
-  for(Cable& cbl : m_plug.cables)
+  for(Process::Cable& cbl : m_plug.cables)
   {
     cbl.source_node.reset();
     cbl.sink_node.reset();

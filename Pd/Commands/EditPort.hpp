@@ -32,7 +32,7 @@ class EditPort final : public iscore::Command
     ISCORE_COMMAND_DECL(Pd::CommandFactoryName(), EditPort, "Edit a node port")
     public:
         EditPort(const Dataflow::ProcessModel& model,
-                 Dataflow::Port next,
+                 Process::Port next,
                  std::size_t index, bool inlet);
 
     void undo() const override;
@@ -45,7 +45,7 @@ protected:
 private:
     Path<Dataflow::ProcessModel> m_model;
 
-    Dataflow::Port m_old, m_new;
+    Process::Port m_old, m_new;
     quint64 m_index{};
     bool m_inlet{}; // true : inlet ; false : outlet
 };
@@ -68,7 +68,7 @@ protected:
 
 private:
     Path<Dataflow::ProcessModel> m_model;
-    Dataflow::Port m_old;
+    Process::Port m_old;
     quint64 m_index{};
     bool m_inlet{}; // true : inlet ; false : outlet
 };

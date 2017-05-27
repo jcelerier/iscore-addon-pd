@@ -38,7 +38,7 @@ void MoveNode::deserializeImpl(DataStreamOutput& s)
 
 CreateCable::CreateCable(
     const Dataflow::DocumentPlugin& dp,
-    Id<Cable> theCable, CableData dat)
+    Id<Process::Cable> theCable, Process::CableData dat)
   : m_model{dp}
   , m_cable{std::move(theCable)}
   , m_dat{std::move(dat)}
@@ -60,7 +60,7 @@ void CreateCable::undo() const
 void CreateCable::redo() const
 {
   auto& model = m_model.find();
-  auto c = new Cable{m_cable, m_dat};
+  auto c = new Process::Cable{m_cable, m_dat};
   model.quiet_createConnection(c);
   model.createGuiConnection(*c);
 
@@ -81,7 +81,7 @@ void CreateCable::deserializeImpl(DataStreamOutput& s)
 
 
 UpdateCable::UpdateCable(
-    const Dataflow::DocumentPlugin& dp, Cable& cable, CableData newDat)
+    const Dataflow::DocumentPlugin& dp, Process::Cable& cable, Process::CableData newDat)
   : m_model{dp}
   , m_cable{cable.id()}
   , m_old{cable}
@@ -116,7 +116,7 @@ void UpdateCable::deserializeImpl(DataStreamOutput& s)
 
 RemoveCable::RemoveCable(
     const Dataflow::DocumentPlugin& dp,
-    const Cable& theCable)
+    const Process::Cable& theCable)
   : m_model{dp}
  // , m_cable{std::move(cable)}
 {

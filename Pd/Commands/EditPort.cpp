@@ -14,7 +14,7 @@ AddPort::AddPort(
 void AddPort::undo() const
 {
     auto& m = m_model.find();
-    std::vector<Dataflow::Port> vec = m_inlet ? m.inlets() : m.outlets();
+    std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.pop_back();
 
@@ -25,9 +25,9 @@ void AddPort::undo() const
 void AddPort::redo() const
 {
     auto& m = m_model.find();
-    std::vector<Dataflow::Port> vec = m_inlet ? m.inlets() : m.outlets();
+    std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
-    vec.push_back(Dataflow::Port{Dataflow::PortType::Message, {}});
+    vec.push_back(Process::Port{Process::PortType::Message, {}});
 
     if(m_inlet) m.setInlets(std::move(vec));
     else m.setOutlets(std::move(vec));
@@ -46,7 +46,7 @@ void AddPort::deserializeImpl(DataStreamOutput& s)
 
 EditPort::EditPort(
         const Dataflow::ProcessModel& model,
-        Dataflow::Port next,
+        Process::Port next,
         std::size_t index, bool inlet)
     : m_model{model}
     , m_new{std::move(next)}
@@ -58,19 +58,19 @@ EditPort::EditPort(
   auto isAudio = [] (const State::Address& addr) { return addr.device == "audio"; };
   auto isMidi = [] (const State::Address& addr) { return addr.device == "midi"; };
 
-  if(m_new.type == PortType::Message)
+  if(m_new.type == Process::PortType::Message)
   {
     if(isAudio(m_new.address.address))
-      m_new.type = PortType::Audio;
+      m_new.type = Process::PortType::Audio;
     else if(isMidi(m_new.address.address))
-      m_new.type = PortType::Midi;
+      m_new.type = Process::PortType::Midi;
   }
 }
 
 void EditPort::undo() const
 {
     auto& m = m_model.find();
-    std::vector<Dataflow::Port> vec = m_inlet ? m.inlets() : m.outlets();
+    std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec[m_index] = m_old;
 
@@ -81,7 +81,7 @@ void EditPort::undo() const
 void EditPort::redo() const
 {
     auto& m = m_model.find();
-    std::vector<Dataflow::Port> vec = m_inlet ? m.inlets() : m.outlets();
+    std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec[m_index] = m_new;
 
@@ -114,7 +114,7 @@ RemovePort::RemovePort(
 void RemovePort::undo() const
 {
     auto& m = m_model.find();
-    std::vector<Dataflow::Port> vec = m_inlet ? m.inlets() : m.outlets();
+    std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.insert(vec.begin() + m_index, m_old);
 
@@ -125,7 +125,7 @@ void RemovePort::undo() const
 void RemovePort::redo() const
 {
     auto& m = m_model.find();
-    std::vector<Dataflow::Port> vec = m_inlet ? m.inlets() : m.outlets();
+    std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.erase(vec.begin() + m_index);
 

@@ -351,8 +351,8 @@ Component::Component(
   }
 
   std::vector<ossia::net::address_base*> inlet_addresses, outlet_addresses;
-  const std::vector<Dataflow::Port>& model_inlets = element.inlets();
-  const std::vector<Dataflow::Port>& model_outlets = element.outlets();
+  const std::vector<Process::Port>& model_inlets = element.inlets();
+  const std::vector<Process::Port>& model_outlets = element.outlets();
   inlet_addresses.resize(model_inlets.size());
   outlet_addresses.resize(model_outlets.size());
 
@@ -360,7 +360,7 @@ Component::Component(
   for(std::size_t i = 0; i < model_inlets.size(); i++)
   {
     auto& e = model_inlets[i];
-    if(e.type == Dataflow::PortType::Message)
+    if(e.type == Process::PortType::Message)
       in_mess.push_back(e.customData.toStdString());
 
     inlet_addresses[i] = df.resolve(e.address);
@@ -369,7 +369,7 @@ Component::Component(
   for(std::size_t i = 0; i < model_outlets.size(); i++)
   {
     auto& e = model_outlets[i];
-    if(e.type == Dataflow::PortType::Message)
+    if(e.type == Process::PortType::Message)
       out_mess.push_back(e.customData.toStdString());
 
     outlet_addresses[i] = df.resolve(e.address);
@@ -430,7 +430,7 @@ Component::Component(
         auto& inlet = cable.sink_node->inputs()[*cable.inlet];
         switch(cable.type)
         {
-          case Dataflow::CableType::ImmediateStrict:
+          case Process::CableType::ImmediateStrict:
           {
            std::cerr << "\n\nConnect 4\n";
            cable.exec = ossia::make_edge(
@@ -438,21 +438,21 @@ Component::Component(
                  outlet, inlet, cable.source_node, cable.sink_node);
             break;
           }
-          case Dataflow::CableType::ImmediateGlutton:
+          case Process::CableType::ImmediateGlutton:
           {
            cable.exec = ossia::make_edge(
                  ossia::immediate_glutton_connection{},
                  outlet, inlet, cable.source_node, cable.sink_node);
             break;
           }
-          case Dataflow::CableType::DelayedStrict:
+          case Process::CableType::DelayedStrict:
           {
            cable.exec = ossia::make_edge(
                  ossia::delayed_strict_connection{},
                  outlet, inlet, cable.source_node, cable.sink_node);
             break;
           }
-          case Dataflow::CableType::DelayedGlutton:
+          case Process::CableType::DelayedGlutton:
           {
            cable.exec = ossia::make_edge(
                  ossia::delayed_glutton_connection{},

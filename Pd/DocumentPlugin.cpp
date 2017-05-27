@@ -60,7 +60,7 @@ void DocumentPlugin::reload()
 {
   window.scene.clearScene();
 
-  for(Cable& cable : cables) cable.gui = nullptr;
+  for(Process::Cable& cable : cables) cable.gui = nullptr;
 
 
   auto processes = m_context.document.findChildren<Dataflow::ProcessModel*>();
@@ -86,16 +86,17 @@ void DocumentPlugin::reload()
     });
   }
 
-  for(Cable& cable : cables)
+  for(Process::Cable& cable : cables)
   {
-    auto& src = cable.source.find();
-    auto& snk = cable.sink.find();
-    if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
+    auto src_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.source.find());
+    auto snk_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.sink.find());
+
+    if(src_p && snk_p && src_p->nodeModel && snk_p->nodeModel && cable.outlet && cable.inlet)
     {
       auto cmd = start_command(); // To prevent connection deletion signals
       cable.gui = window.scene.createConnection(
-            *snk.node, *cable.inlet,
-            *src.node, *cable.outlet).get();
+            *snk_p->node, *cable.inlet,
+            *src_p->node, *cable.outlet).get();
       auto ct = std::make_unique<CustomConnection>(window.scene, *cable.gui);
 
       con(*ct, &CustomConnection::selectionChanged,
@@ -114,23 +115,23 @@ void DocumentPlugin::reload()
 
 }
 
-void DocumentPlugin::createGuiConnection(Cable& cable)
+void DocumentPlugin::createGuiConnection(Process::Cable& cable)
 {
   auto cmd = start_command();
 
-  auto& src = cable.source.find();
-  auto& snk = cable.sink.find();
+  auto src_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.source.find());
+  auto snk_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.sink.find());
 
-  if(src.nodeModel && snk.nodeModel && cable.outlet && cable.inlet)
+  if(src_p && snk_p && src_p->nodeModel && snk_p->nodeModel && cable.outlet && cable.inlet)
   {
     cable.gui = window.scene.createConnection(
-          *snk.node, *cable.inlet,
-          *src.node, *cable.outlet).get();
+          *snk_p->node, *cable.inlet,
+          *src_p->node, *cable.outlet).get();
     cable.gui->setGraphicsObject(std::make_unique<CustomConnection>(window.scene, *cable.gui));
   }
 }
 
-void DocumentPlugin::updateConnection(const Cable& cable, CableData)
+void DocumentPlugin::updateConnection(const Process::Cable& cable, Process::CableData)
 {
   /*
   auto cmd = start_command();
@@ -151,7 +152,7 @@ void DocumentPlugin::updateConnection(const Cable& cable, CableData)
   */
 }
 
-void DocumentPlugin::removeConnection(Id<Cable> c)
+void DocumentPlugin::removeConnection(Id<Process::Cable> c)
 {
   auto cmd = start_command();
 
@@ -164,13 +165,13 @@ void DocumentPlugin::removeConnection(Id<Cable> c)
   }
 }
 
-void DocumentPlugin::quiet_createConnection(Cable* i)
+void DocumentPlugin::quiet_createConnection(Process::Cable* i)
 {
   ISCORE_ASSERT(cables.find(i->id()) == cables.end());
   cables.add(i);
 }
 
-void DocumentPlugin::quiet_updateConnection(const Cable& before, CableData after)
+void DocumentPlugin::quiet_updateConnection(const Process::Cable& before, Process::CableData after)
 {
   /*
   auto it = ossia::find_if(cables, [&] (const auto& c) { return c.cable == before; });
@@ -185,7 +186,7 @@ void DocumentPlugin::quiet_updateConnection(const Cable& before, CableData after
   */
 }
 
-void DocumentPlugin::quiet_removeConnection(const Cable& c)
+void DocumentPlugin::quiet_removeConnection(const Process::Cable& c)
 {
   /*
   auto it = ossia::find_if(cables, [&] (const auto& other) { return other.cable == c; });
@@ -201,8 +202,8 @@ void DocumentPlugin::createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Nod
   auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
   auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
   CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
-  auto cable = new Cable{getStrongId(cables),
-      CableData{{},
+  auto cable = new Process::Cable{getStrongId(cables),
+      Process::CableData{{},
       *out_model->process,
       *in_model->process,
       (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
@@ -211,7 +212,7 @@ void DocumentPlugin::createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Nod
 
   // The command is sent but not executed since the cable has already been created
   // by the framework
-  disp.submitCommand<CreateCable>(*this, cable->id(), (CableData) *cable);
+  disp.submitCommand<CreateCable>(*this, cable->id(), (Process::CableData) *cable);
 
   in_model->process->cables.push_back(cable->id());
   out_model->process->cables.push_back(cable->id());
@@ -219,13 +220,13 @@ void DocumentPlugin::createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Nod
   quiet_createConnection(cable);
 }
 
-void DocumentPlugin::updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out, Cable& cur)
+void DocumentPlugin::updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Node* in, QtNodes::Node* out, Process::Cable& cur)
 {
   auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
   auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
   CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
 
-  CableData next{cur.type,
+  Process::CableData next{cur.type,
              *out_model->process,
              *in_model->process,
              (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
@@ -243,7 +244,7 @@ void DocumentPlugin::updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Nod
     out_model->process->cables.push_back(cur.id());
   }
 
-  (CableData&)cur = next;
+  (Process::CableData&)cur = next;
   disp.submitCommand<UpdateCable>(*this, cur, std::move(next));
 
   //quiet_updateConnection(std::move(previous), std::move(next));
@@ -322,7 +323,7 @@ void DocumentPlugin::on_connectionDeleted(QtNodes::Connection& c)
   */
 }
 
-void DocumentPlugin::on_connectionTypeChanged(QList<QtNodes::Connection*> c, CableType t)
+void DocumentPlugin::on_connectionTypeChanged(QList<QtNodes::Connection*> c, Process::CableType t)
 {
   ISCORE_TODO;
 }
