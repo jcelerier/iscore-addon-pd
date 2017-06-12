@@ -31,7 +31,7 @@ signals:
 private:
   QVariant itemChange(
       QGraphicsItem::GraphicsItemChange change,
-      const QVariant& value)
+      const QVariant& value) override
   {
     if(change == QGraphicsItem::ItemSelectedHasChanged)
     {
