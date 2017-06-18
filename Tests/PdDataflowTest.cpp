@@ -144,10 +144,10 @@ private slots:
     const time_value granul{1000. * 64. / 44100.};
     // create the main time_constraint
 
-    auto cb = [] (time_value t0, time_value, const state&) {
+    auto cb = [] (double t0, time_value, const state_element&) {
     };
 
-    auto cb_2 = [] (time_value t0, time_value, const state&) {
+    auto cb_2 = [] (double t0, time_value, const state_element&) {
     };
     auto main_constraint = std::make_shared<time_constraint>(
           cb,
@@ -165,7 +165,7 @@ private slots:
     {
       time_value tv{(double)time};
       auto cst = std::make_shared<time_constraint>(cb_2, *s, *e, tv, tv, tv);
-      cst->set_granularity(granul);
+      //cst->set_granularity(granul);
       s->next_time_constraints().push_back(cst);
       e->previous_time_constraints().push_back(cst);
       main_scenario.add_time_constraint(cst);
@@ -215,16 +215,14 @@ private slots:
     c[13]->add_time_process(std::make_shared<node_process>(graph, f5_2));
 
 
-    main_constraint->set_drive_mode(ossia::clock::drive_mode::EXTERNAL);
-    main_constraint->set_granularity(time_value(1000. * 64. / 44100.));
     main_constraint->set_speed(1.0);
 
     main_constraint->offset(0.000000001_tv);
     main_constraint->start();
 
+    const ossia::time_value rate{1000000. * 64. / 44100.};
     for(int i = 0; i < 15  * 44100. / 64.; i++)
     {
-      const ossia::time_value rate{1000000. * 64. / 44100.};
       main_constraint->tick(rate);
 
       g.state(st);

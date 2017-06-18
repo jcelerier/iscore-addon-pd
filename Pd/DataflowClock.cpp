@@ -23,12 +23,6 @@ Clock::Clock(
   auto& bs = context.scenario;
   if(!bs.active())
     return;
-
-  ossia::time_constraint& ossia_cst = *bs.baseConstraint().OSSIAConstraint();
-
-  ossia_cst.set_drive_mode(ossia::clock::drive_mode::EXTERNAL);
-  // Number of milliseconds in each step -> we tick once per buffer
-  ossia_cst.set_granularity(ossia::time_value(1000. * 64. / 44100.) );
 }
 
 Clock::~Clock()
