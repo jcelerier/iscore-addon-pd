@@ -14,14 +14,14 @@ MoveNode::MoveNode(
 
 }
 
-void MoveNode::undo() const
+void MoveNode::undo(const iscore::DocumentContext& ctx) const
 {
-  m_model.find().setPos(m_old);
+  m_model.find(ctx).setPos(m_old);
 }
 
-void MoveNode::redo() const
+void MoveNode::redo(const iscore::DocumentContext& ctx) const
 {
-  m_model.find().setPos(m_new);
+  m_model.find(ctx).setPos(m_new);
 }
 
 void MoveNode::serializeImpl(DataStreamInput& s) const
@@ -46,26 +46,39 @@ CreateCable::CreateCable(
 
 }
 
-void CreateCable::undo() const
+CreateCable::CreateCable(
+    const Dataflow::DocumentPlugin& dp,
+    Id<Process::Cable> theCable, const Process::Cable& cable)
+  : m_model{dp}
+  , m_cable{std::move(theCable)}
 {
-  auto& src = m_dat.source.find().cables;
-  src.erase(ossia::find(src, m_cable));
-
-  auto& sink = m_dat.sink.find().cables;
-  sink.erase(ossia::find(sink, m_cable));
-
-  m_model.find().removeConnection(m_cable);
+  m_dat.inlet = cable.inlet;
+  m_dat.outlet = cable.outlet;
+  m_dat.source = *cable.source;
+  m_dat.sink = *cable.sink;
+  m_dat.type = cable.type;
 }
 
-void CreateCable::redo() const
+void CreateCable::undo(const iscore::DocumentContext& ctx) const
 {
-  auto& model = m_model.find();
-  auto c = new Process::Cable{m_cable, m_dat};
+  auto& src = m_dat.source.find(ctx).cables;
+  src.erase(ossia::find(src, m_cable));
+
+  auto& sink = m_dat.sink.find(ctx).cables;
+  sink.erase(ossia::find(sink, m_cable));
+
+  m_model.find(ctx).removeConnection(m_cable);
+}
+
+void CreateCable::redo(const iscore::DocumentContext& ctx) const
+{
+  auto& model = m_model.find(ctx);
+  auto c = new Process::Cable{ctx, m_cable, m_dat};
   model.quiet_createConnection(c);
   model.createGuiConnection(*c);
 
-  m_dat.source.find().cables.push_back(m_cable);
-  m_dat.sink.find().cables.push_back(m_cable);
+  m_dat.source.find(ctx).cables.push_back(m_cable);
+  m_dat.sink.find(ctx).cables.push_back(m_cable);
 }
 
 void CreateCable::serializeImpl(DataStreamInput& s) const
@@ -84,21 +97,24 @@ UpdateCable::UpdateCable(
     const Dataflow::DocumentPlugin& dp, Process::Cable& cable, Process::CableData newDat)
   : m_model{dp}
   , m_cable{cable.id()}
-  , m_old{cable}
   , m_new{std::move(newDat)}
 {
-
+  m_old.inlet = cable.inlet;
+  m_old.outlet = cable.outlet;
+  m_old.source = *cable.source;
+  m_old.sink = *cable.sink;
+  m_old.type = cable.type;
 }
 
-void UpdateCable::undo() const
+void UpdateCable::undo(const iscore::DocumentContext& ctx) const
 {
-  auto& dp = m_model.find();
+  auto& dp = m_model.find(ctx);
   dp.updateConnection(dp.cables.at(m_cable), m_old);
 }
 
-void UpdateCable::redo() const
+void UpdateCable::redo(const iscore::DocumentContext& ctx) const
 {
-  auto& dp = m_model.find();
+  auto& dp = m_model.find(ctx);
   dp.updateConnection(dp.cables.at(m_cable), m_new);
 }
 
@@ -123,14 +139,14 @@ RemoveCable::RemoveCable(
 
 }
 
-void RemoveCable::undo() const
+void RemoveCable::undo(const iscore::DocumentContext& ctx) const
 {
-//  m_model.find().createConnection(m_cable);
+//  m_model.find(ctx).createConnection(m_cable);
 }
 
-void RemoveCable::redo() const
+void RemoveCable::redo(const iscore::DocumentContext& ctx) const
 {
-//  m_model.find().removeConnection(m_cable);
+//  m_model.find(ctx).removeConnection(m_cable);
 }
 
 void RemoveCable::serializeImpl(DataStreamInput& s) const

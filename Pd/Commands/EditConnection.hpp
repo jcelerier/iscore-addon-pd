@@ -15,8 +15,8 @@ class MoveNode final : public iscore::Command
   public:
     MoveNode(const Dataflow::ProcessModel& model, QPointF newpos);
 
-  void undo() const override;
-  void redo() const override;
+  void undo(const iscore::DocumentContext& ctx) const override;
+  void redo(const iscore::DocumentContext& ctx) const override;
 
   void update(const ProcessModel& m, QPointF pos) { m_new = pos; }
 protected:
@@ -36,9 +36,12 @@ class CreateCable final : public iscore::Command
     CreateCable(
       const Dataflow::DocumentPlugin& dp,
       Id<Process::Cable> theCable, Process::CableData dat);
+  CreateCable(
+      const Dataflow::DocumentPlugin& dp,
+      Id<Process::Cable> theCable, const Process::Cable& dat);
 
-  void undo() const override;
-  void redo() const override;
+  void undo(const iscore::DocumentContext& ctx) const override;
+  void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
   void serializeImpl(DataStreamInput& s) const override;
@@ -59,8 +62,8 @@ class UpdateCable final : public iscore::Command
       const Dataflow::DocumentPlugin& dp,
       Process::Cable& theCable, Process::CableData newDat);
 
-  void undo() const override;
-  void redo() const override;
+  void undo(const iscore::DocumentContext& ctx) const override;
+  void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
   void serializeImpl(DataStreamInput& s) const override;
@@ -81,8 +84,8 @@ class RemoveCable final : public iscore::Command
       const Dataflow::DocumentPlugin& dp,
       const Process::Cable& theCable);
 
-  void undo() const override;
-  void redo() const override;
+  void undo(const iscore::DocumentContext& ctx) const override;
+  void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
   void serializeImpl(DataStreamInput& s) const override;

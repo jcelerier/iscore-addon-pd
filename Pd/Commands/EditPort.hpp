@@ -14,8 +14,8 @@ class AddPort final : public iscore::Command
     public:
         AddPort(const Dataflow::ProcessModel& model, bool inlet);
 
-    void undo() const override;
-    void redo() const override;
+    void undo(const iscore::DocumentContext& ctx) const override;
+    void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
     void serializeImpl(DataStreamInput& s) const override;
@@ -35,8 +35,8 @@ class EditPort final : public iscore::Command
                  Process::Port next,
                  std::size_t index, bool inlet);
 
-    void undo() const override;
-    void redo() const override;
+    void undo(const iscore::DocumentContext& ctx) const override;
+    void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
     void serializeImpl(DataStreamInput& s) const override;
@@ -59,8 +59,8 @@ class RemovePort final : public iscore::Command
         RemovePort(const Dataflow::ProcessModel& model,
                    std::size_t index, bool inlet);
 
-    void undo() const override;
-    void redo() const override;
+    void undo(const iscore::DocumentContext& ctx) const override;
+    void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
     void serializeImpl(DataStreamInput& s) const override;

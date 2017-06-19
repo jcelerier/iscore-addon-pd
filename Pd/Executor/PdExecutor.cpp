@@ -417,9 +417,9 @@ Component::Component(
     if(!cable.exec)
     {
       std::cerr << "\n\nConnect 2\n";
-      if(&cable.source.find() == &element)
+      if(cable.source == &element)
         cable.source_node = node;
-      if(&cable.sink.find() == &element)
+      if(cable.sink == &element)
         cable.sink_node = node;
 
       std::cerr << cable.source_node.get() << " && " << cable.sink_node.get() << "\n";

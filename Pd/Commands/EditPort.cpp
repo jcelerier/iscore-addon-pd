@@ -11,9 +11,9 @@ AddPort::AddPort(
 
 }
 
-void AddPort::undo() const
+void AddPort::undo(const iscore::DocumentContext& ctx) const
 {
-    auto& m = m_model.find();
+    auto& m = m_model.find(ctx);
     std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.pop_back();
@@ -22,9 +22,9 @@ void AddPort::undo() const
     else m.setOutlets(std::move(vec));
 }
 
-void AddPort::redo() const
+void AddPort::redo(const iscore::DocumentContext& ctx) const
 {
-    auto& m = m_model.find();
+    auto& m = m_model.find(ctx);
     std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.push_back(Process::Port{Process::PortType::Message, {}});
@@ -67,9 +67,9 @@ EditPort::EditPort(
   }
 }
 
-void EditPort::undo() const
+void EditPort::undo(const iscore::DocumentContext& ctx) const
 {
-    auto& m = m_model.find();
+    auto& m = m_model.find(ctx);
     std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec[m_index] = m_old;
@@ -78,9 +78,9 @@ void EditPort::undo() const
     else m.setOutlets(std::move(vec));
 }
 
-void EditPort::redo() const
+void EditPort::redo(const iscore::DocumentContext& ctx) const
 {
-    auto& m = m_model.find();
+    auto& m = m_model.find(ctx);
     std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec[m_index] = m_new;
@@ -111,9 +111,9 @@ RemovePort::RemovePort(
     m_old = inlet ? model.inlets()[index] : model.outlets()[index];
 }
 
-void RemovePort::undo() const
+void RemovePort::undo(const iscore::DocumentContext& ctx) const
 {
-    auto& m = m_model.find();
+    auto& m = m_model.find(ctx);
     std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.insert(vec.begin() + m_index, m_old);
@@ -122,9 +122,9 @@ void RemovePort::undo() const
     else m.setOutlets(std::move(vec));
 }
 
-void RemovePort::redo() const
+void RemovePort::redo(const iscore::DocumentContext& ctx) const
 {
-    auto& m = m_model.find();
+    auto& m = m_model.find(ctx);
     std::vector<Process::Port> vec = m_inlet ? m.inlets() : m.outlets();
 
     vec.erase(vec.begin() + m_index);

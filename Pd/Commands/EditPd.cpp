@@ -14,14 +14,14 @@ EditPdPath::EditPdPath(
 
 }
 
-void EditPdPath::undo() const
+void EditPdPath::undo(const iscore::DocumentContext& ctx) const
 {
-    m_model.find().setScript(m_old);
+    m_model.find(ctx).setScript(m_old);
 }
 
-void EditPdPath::redo() const
+void EditPdPath::redo(const iscore::DocumentContext& ctx) const
 {
-    m_model.find().setScript(m_new);
+    m_model.find(ctx).setScript(m_new);
 }
 
 void EditPdPath::serializeImpl(DataStreamInput& s) const

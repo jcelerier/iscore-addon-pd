@@ -88,8 +88,8 @@ void DocumentPlugin::reload()
 
   for(Process::Cable& cable : cables)
   {
-    auto src_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.source.find());
-    auto snk_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.sink.find());
+    auto src_p = dynamic_cast<Dataflow::ProcessModel*>(cable.source);
+    auto snk_p = dynamic_cast<Dataflow::ProcessModel*>(cable.sink);
 
     if(src_p && snk_p && src_p->nodeModel && snk_p->nodeModel && cable.outlet && cable.inlet)
     {
@@ -119,8 +119,8 @@ void DocumentPlugin::createGuiConnection(Process::Cable& cable)
 {
   auto cmd = start_command();
 
-  auto src_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.source.find());
-  auto snk_p = dynamic_cast<Dataflow::ProcessModel*>(&cable.sink.find());
+  auto src_p = dynamic_cast<Dataflow::ProcessModel*>(cable.source);
+  auto snk_p = dynamic_cast<Dataflow::ProcessModel*>(cable.sink);
 
   if(src_p && snk_p && src_p->nodeModel && snk_p->nodeModel && cable.outlet && cable.inlet)
   {
@@ -138,8 +138,8 @@ void DocumentPlugin::updateConnection(const Process::Cable& cable, Process::Cabl
   auto it = ossia::find_if(cables, [&] (const auto& c) { return c.cable == before; });
   if(it != cables.end())
   {
-    auto new_source = after.source.find().node;
-    auto new_sink = after.sink.find().node;
+    auto new_source = after.source.find(ctx).node;
+    auto new_sink = after.sink.find(ctx).node;
 
     it->gui->setNodeToPort(*new_source, QtNodes::PortType::Out, *after.outlet);
     it->gui->setNodeToPort(*new_sink, QtNodes::PortType::In, *after.inlet);
@@ -202,17 +202,22 @@ void DocumentPlugin::createCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Nod
   auto in_model = static_cast<CustomDataModel*>(in->nodeDataModel());
   auto out_model = static_cast<CustomDataModel*>(out->nodeDataModel());
   CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
-  auto cable = new Process::Cable{getStrongId(cables),
-      Process::CableData{{},
-      *out_model->process,
-      *in_model->process,
-      (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
-      (std::size_t)c.getPortIndex(QtNodes::PortType::In)}};
+  auto cable = new Process::Cable{
+               this->context(),
+               getStrongId(cables),
+               Process::CableData{
+                 {},
+                 *out_model->process,
+                 *in_model->process,
+                 (std::size_t)c.getPortIndex(QtNodes::PortType::Out),
+                 (std::size_t)c.getPortIndex(QtNodes::PortType::In)
+               }
+  };
   cable->gui = &c;
 
   // The command is sent but not executed since the cable has already been created
   // by the framework
-  disp.submitCommand<CreateCable>(*this, cable->id(), (Process::CableData) *cable);
+  disp.submitCommand<CreateCable>(*this, cable->id(), *cable);
 
   in_model->process->cables.push_back(cable->id());
   out_model->process->cables.push_back(cable->id());
@@ -233,9 +238,9 @@ void DocumentPlugin::updateCableFromGuiImpl(QtNodes::Connection& c, QtNodes::Nod
              (std::size_t)c.getPortIndex(QtNodes::PortType::In)};
 
   { // Remove cable in previous nodes
-    auto& source = cur.source.find();
+    auto& source = *cur.source;
     source.cables.erase(ossia::find(source.cables, cur.id()));
-    auto& sink = cur.sink.find();
+    auto& sink = *cur.sink;
     sink.cables.erase(ossia::find(sink.cables, cur.id()));
   }
 
@@ -313,9 +318,9 @@ void DocumentPlugin::on_connectionDeleted(QtNodes::Connection& c)
     CommandDispatcher<SendStrategy::Quiet> disp{context().commandStack};
     disp.submitCommand<RemoveCable>(*this, existing_it->cable);
 
-    auto& source = existing_it->cable.source.find();
+    auto& source = existing_it->cable.source.find(ctx);
     source.cables.erase(ossia::find(source.cables, existing_it->cable));
-    auto& sink = existing_it->cable.sink.find();
+    auto& sink = existing_it->cable.sink.find(ctx);
     sink.cables.erase(ossia::find(sink.cables, existing_it->cable));
 
     quiet_removeConnection(existing_it->cable);

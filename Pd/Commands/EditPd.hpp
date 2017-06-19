@@ -12,8 +12,8 @@ class EditPdPath final : public iscore::Command
     public:
         EditPdPath(const Pd::ProcessModel& model, QString newpath);
 
-    void undo() const override;
-    void redo() const override;
+    void undo(const iscore::DocumentContext& ctx) const override;
+    void redo(const iscore::DocumentContext& ctx) const override;
 
 protected:
     void serializeImpl(DataStreamInput& s) const override;
