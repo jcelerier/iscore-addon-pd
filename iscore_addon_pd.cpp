@@ -40,6 +40,7 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
         , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
         , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
+        , FW<Process::LayerFactory, Pd::LayerFactory>
     >(ctx, key);
 }
 

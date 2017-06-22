@@ -54,6 +54,9 @@ set(SRCS
 add_library(${PROJECT_NAME} ${SRCS} ${HDRS})
 
 iscore_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
+if(APPLE)
+    target_link_libraries(${PROJECT_NAME} PUBLIC -L/usr/local/lib )
+endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC iscore_plugin_engine ${LIBPD_LIBRARY} nodes portaudio)
 target_include_directories(${PROJECT_NAME} PUBLIC
   3rdparty/libpd/libpd_wrapper

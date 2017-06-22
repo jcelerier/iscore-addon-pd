@@ -11,7 +11,7 @@ class ProcessModel;
 PROCESS_METADATA(
         ISCORE_ADDON_PD_EXPORT,
         Pd::ProcessModel,
-        "39fced18-2c56-4d06-af26-37d5d6aabf0f",
+        "7b3b18ea-311b-40f9-b04e-60ec1fe05786",
         "PureData",
         "PureData"
         )

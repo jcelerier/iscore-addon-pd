@@ -141,13 +141,13 @@ private slots:
     auto main_start_event = *(main_start_node->emplace(main_start_node->get_time_events().begin(), {}));
     auto main_end_event = *(main_end_node->emplace(main_end_node->get_time_events().begin(), {}));
 
-    const time_value granul{1000. * 64. / 44100.};
+    const ossia::time_value granul{1000. * 64. / 44100.};
     // create the main time_constraint
 
-    auto cb = [] (double t0, time_value, const state_element&) {
+    auto cb = [] (double t0, ossia::time_value, const state_element&) {
     };
 
-    auto cb_2 = [] (double t0, time_value, const state_element&) {
+    auto cb_2 = [] (double t0, ossia::time_value, const state_element&) {
     };
     auto main_constraint = std::make_shared<time_constraint>(
           cb,
@@ -163,7 +163,7 @@ private slots:
 
     auto make_constraint = [&] (auto time, auto s, auto e)
     {
-      time_value tv{(double)time};
+      ossia::time_value tv{(double)time};
       auto cst = std::make_shared<time_constraint>(cb_2, *s, *e, tv, tv, tv);
       //cst->set_granularity(granul);
       s->next_time_constraints().push_back(cst);
