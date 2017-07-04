@@ -13,9 +13,14 @@ class CustomDataModel;
 class ProcessModel : public Process::DataflowProcess
 {
     Q_OBJECT
+    ISCORE_SERIALIZE_FRIENDS
     Q_PROPERTY(QPointF pos READ pos WRITE setPos NOTIFY posChanged)
   public:
+    using base_type = Process::DataflowProcess;
     using Process::DataflowProcess::DataflowProcess;
+
+    ProcessModel(DataStream::Deserializer& vis, QObject* parent);
+    ProcessModel(JSONObject::Deserializer& vis, QObject* parent);
 
     QPointer<CustomDataModel> nodeModel{};
     QPointer<QtNodes::Node> node{};

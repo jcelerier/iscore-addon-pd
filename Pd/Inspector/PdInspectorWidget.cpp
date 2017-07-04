@@ -5,7 +5,7 @@ namespace Pd
 {
 
 
-PdWidget::PdWidget(const ProcessModel& object, const iscore::DocumentContext& context, QWidget* parent)
+PdWidget::PdWidget(const Pd::ProcessModel& object, const iscore::DocumentContext& context, QWidget* parent)
   : InspectorWidgetDelegate_T{object, parent}
   , m_lay{this}
   , m_dfWidg{context, object, this}
@@ -15,6 +15,7 @@ PdWidget::PdWidget(const ProcessModel& object, const iscore::DocumentContext& co
 
   m_lay.addWidget(&m_dfWidg);
   m_lay.addWidget(&m_ledit);
+  m_ledit.setText(object.script());
   m_lay.addStretch(1);
 
   con(m_ledit, &QLineEdit::editingFinished,

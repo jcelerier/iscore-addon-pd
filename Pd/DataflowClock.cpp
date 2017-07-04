@@ -117,7 +117,10 @@ void Clock::play_impl(
                           paNoFlag,
                           &PortAudioCallback,
                           this);
-  Pa_StartStream( stream );
+  if(ec == PaErrorCode::paNoError)
+    Pa_StartStream( stream );
+  else
+    std::cerr << "Error while opening audio stream: " << ec << std::endl;
 }
 
 void Clock::pause_impl(
