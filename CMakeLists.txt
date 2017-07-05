@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 project(iscore_addon_pd LANGUAGES CXX)
 
-find_library(LIBPD_LIBRARY NAMES libpd pd HINTS 3rdparty/libpd/libs)
+if(ANDROID)
+  set(LIBPD_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libpd/libs/android/libpd.a)
+else()
+  find_library(LIBPD_LIBRARY NAMES libpd pd HINTS 3rdparty/libpd/libs)
+endif()
 if(NOT LIBPD_LIBRARY)
     message("Please build 3rdparty/libpd (git submodule update --init --recursive && make) ")
     return()
