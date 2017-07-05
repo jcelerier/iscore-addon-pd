@@ -42,5 +42,8 @@ class ClockFactory final : public Engine::Execution::ClockManagerFactory
         QString prettyName() const override;
         std::unique_ptr<Engine::Execution::ClockManager> make(
             const Engine::Execution::Context& ctx) override;
+
+        std::function<ossia::time_value(const TimeVal&)>
+        makeTimeFunction() const;
 };
 }

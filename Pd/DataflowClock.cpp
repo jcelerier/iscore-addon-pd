@@ -11,6 +11,8 @@
 #include <boost/graph/graphviz.hpp>
 #include <portaudio.h>
 #include <ossia/dataflow/audio_address.hpp>
+const constexpr double sampleRate = 44100;
+const constexpr double bufferSize = 64;
 namespace Dataflow
 {
 Clock::Clock(
@@ -71,7 +73,7 @@ int Clock::PortAudioCallback(
   }
 
   // Run a tick
-  const ossia::time_value rate{1000000. * 64. / 44100.};
+  const ossia::time_value rate{1000000. * bufferSize / sampleRate};
   clock.m_plug.execState.clear();
 
   clock.m_cur->baseConstraint().OSSIAConstraint()->tick(rate);
@@ -148,6 +150,14 @@ std::unique_ptr<Engine::Execution::ClockManager> ClockFactory::make(
     const Engine::Execution::Context& ctx)
 {
   return std::make_unique<Clock>(ctx);
+}
+
+std::function<ossia::time_value (const TimeVal&)> ClockFactory::makeTimeFunction() const
+{
+  // Go from milliseconds to samples
+  return [] {
+  }
+    ;
 }
 
 QString ClockFactory::prettyName() const
