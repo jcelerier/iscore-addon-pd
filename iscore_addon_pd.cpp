@@ -8,7 +8,7 @@
 #include <Pd/DataflowClock.hpp>
 #include <iscore/plugins/customfactory/FactorySetup.hpp>
 #include <iscore_addon_pd_commands_files.hpp>
-
+#include <Pd/Devices/AudioDevice.hpp>
 #include <Scenario/iscore_plugin_scenario.hpp>
 #include <iscore_plugin_deviceexplorer.hpp>
 
@@ -41,6 +41,7 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
         , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
+        , FW<Device::ProtocolFactory, Pd::AudioProtocolFactory>
     >(ctx, key);
 }
 

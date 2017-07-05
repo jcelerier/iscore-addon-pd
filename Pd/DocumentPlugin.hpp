@@ -11,6 +11,8 @@
 #include <ossia/network/local/local.hpp>
 #include <ossia/dataflow/graph.hpp>
 #include <boost/bimap.hpp>
+
+#include <Pd/Devices/AudioDevice.hpp>
 namespace ossia { class audio_address; class midi_generic_address; }
 namespace Dataflow
 {
@@ -52,6 +54,7 @@ public:
   void on_nodeMoved(QtNodes::Node& c, const QPointF& pos);
   void on_released(QPointF);
 
+  Pd::audio_protocol& audioProto() { return *audioproto; }
   ossia::net::address_base* resolve(const State::AddressAccessor& ) const;
 
   DataflowWindow window;
@@ -60,11 +63,10 @@ public:
 
   iscore::QuietOngoingCommandDispatcher m_dispatcher;
 
-  mutable ossia::net::generic_device audiodev;
+  Pd::audio_protocol* audioproto{};
+  mutable ossia::net::generic_device audio_dev;
   mutable ossia::net::generic_device midi_dev;
 
-  std::vector<ossia::audio_address*> audio_ins;
-  std::vector<ossia::audio_address*> audio_outs;
   std::vector<ossia::midi_generic_address*> midi_ins;
   std::vector<ossia::midi_generic_address*> midi_outs;
   struct temp_bool {

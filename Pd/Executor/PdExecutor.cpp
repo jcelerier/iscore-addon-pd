@@ -359,7 +359,7 @@ Component::Component(
   std::vector<std::string> in_mess, out_mess;
   for(std::size_t i = 0; i < model_inlets.size(); i++)
   {
-    auto& e = model_inlets[i];
+    const Process::Port& e = model_inlets[i];
     if(e.type == Process::PortType::Message)
       in_mess.push_back(e.customData.toStdString());
 
@@ -368,7 +368,7 @@ Component::Component(
 
   for(std::size_t i = 0; i < model_outlets.size(); i++)
   {
-    auto& e = model_outlets[i];
+    const Process::Port& e = model_outlets[i];
     if(e.type == Process::PortType::Message)
       out_mess.push_back(e.customData.toStdString());
 

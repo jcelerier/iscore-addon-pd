@@ -21,18 +21,12 @@ private:
         void pause_impl(Engine::Execution::BaseScenarioElement&) override;
         void resume_impl(Engine::Execution::BaseScenarioElement&) override;
         void stop_impl(Engine::Execution::BaseScenarioElement&) override;
+        bool paused() const override;
 
         Engine::Execution::DefaultClockManager m_default;
         Dataflow::DocumentPlugin& m_plug;
         Engine::Execution::BaseScenarioElement* m_cur{};
-        PaStream* stream{};
-        static int PortAudioCallback(
-            const void* input,
-            void* output,
-            unsigned long frameCount,
-            const PaStreamCallbackTimeInfo* timeInfo,
-            PaStreamCallbackFlags statusFlags,
-            void* userData);
+        bool m_paused{};
 };
 
 class ClockFactory final : public Engine::Execution::ClockManagerFactory
@@ -44,6 +38,8 @@ class ClockFactory final : public Engine::Execution::ClockManagerFactory
             const Engine::Execution::Context& ctx) override;
 
         std::function<ossia::time_value(const TimeVal&)>
-        makeTimeFunction() const;
+        makeTimeFunction(const iscore::DocumentContext& ctx) const override;
+        std::function<TimeVal(const ossia::time_value&)>
+        makeReverseTimeFunction(const iscore::DocumentContext& ctx) const override;
 };
 }

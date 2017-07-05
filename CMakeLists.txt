@@ -34,6 +34,8 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorFactory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorWidget.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/DataflowWidget.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/AudioDevice.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/MidiDevice.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/iscore_addon_pd.hpp"
 )
 
@@ -52,6 +54,8 @@ set(SRCS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/DataflowProcess.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorWidget.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/DataflowWidget.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/AudioDevice.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/MidiDevice.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/iscore_addon_pd.cpp"
 )
 

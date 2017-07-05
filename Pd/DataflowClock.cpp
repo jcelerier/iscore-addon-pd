@@ -11,8 +11,6 @@
 #include <boost/graph/graphviz.hpp>
 #include <portaudio.h>
 #include <ossia/dataflow/audio_address.hpp>
-const constexpr double sampleRate = 44100;
-const constexpr double bufferSize = 64;
 namespace Dataflow
 {
 Clock::Clock(
@@ -39,53 +37,12 @@ Clock::~Clock()
   Pa_Terminate();
 }
 
-int Clock::PortAudioCallback(
-    const void *input, void *output,
-    unsigned long frameCount,
-    const PaStreamCallbackTimeInfo* timeInfo,
-    PaStreamCallbackFlags statusFlags,
-    void *userData)
-{
-  using idx_t = gsl::span<float>::index_type;
-  const idx_t fc = frameCount;
-  auto& clock = *static_cast<Clock*>(userData);
-
-  auto float_input = ((float **) input);
-  auto float_output = ((float **) output);
-
-  // Prepare audio inputs
-  const int n_in_channels = clock.m_plug.audio_ins.size();
-  for(int i = 0; i < n_in_channels; i++)
-  {
-    clock.m_plug.audio_ins[i]->audio = {float_input[i], fc};
-  }
-
-  // Prepare audio outputs
-  const int n_out_channels = clock.m_plug.audio_outs.size();
-  for(int i = 0; i < n_out_channels; i++)
-  {
-    clock.m_plug.audio_outs[i]->audio = {float_output[i], fc};
-
-    for(int j = 0; j < frameCount; j++)
-    {
-      float_output[i][j] = 0;
-   }
-  }
-
-  // Run a tick
-  const ossia::time_value rate{1000000. * bufferSize / sampleRate};
-  clock.m_plug.execState.clear();
-
-  clock.m_cur->baseConstraint().OSSIAConstraint()->tick(rate);
-  clock.m_plug.execGraph->state(clock.m_plug.execState);
-  clock.m_plug.execState.commit();
-  return 0;
-}
-
 void Clock::play_impl(
     const TimeVal& t,
     Engine::Execution::BaseScenarioElement& bs)
 {
+  m_paused = false;
+
   std::stringstream s;
   boost::write_graphviz(s, m_plug.execGraph->m_graph, [&] (auto& out, const auto& v) {
       out << "[label=\"" << (void*)m_plug.execGraph->m_graph[v].get() << "\"]";
@@ -97,53 +54,54 @@ void Clock::play_impl(
 
   m_default.play(t);
 
-  PaStreamParameters inputParameters;
-  inputParameters.device = Pa_GetDefaultInputDevice();
-  inputParameters.channelCount = m_plug.audio_ins.size();
-  inputParameters.sampleFormat = paFloat32 | paNonInterleaved;
-  inputParameters.suggestedLatency = 0.01;
-  inputParameters.hostApiSpecificStreamInfo = nullptr;
+  m_plug.audioProto().ui_tick = [this] (unsigned long frameCount) {
+    m_plug.execState.clear();
+    m_cur->baseConstraint().OSSIAConstraint()->tick(ossia::time_value(frameCount));
+    m_plug.execGraph->state(m_plug.execState);
+    m_plug.execState.commit();
+  };
 
-  PaStreamParameters outputParameters;
-  outputParameters.device = Pa_GetDefaultOutputDevice();
-  outputParameters.channelCount = m_plug.audio_outs.size();
-  outputParameters.sampleFormat = paFloat32 | paNonInterleaved;
-  outputParameters.suggestedLatency = 0.01;
-  outputParameters.hostApiSpecificStreamInfo = nullptr;
-
-  auto ec = Pa_OpenStream(&stream,
-                          &inputParameters,
-                          &outputParameters,
-                          44100,
-                          64,
-                          paNoFlag,
-                          &PortAudioCallback,
-                          this);
-  if(ec == PaErrorCode::paNoError)
-    Pa_StartStream( stream );
-  else
-    std::cerr << "Error while opening audio stream: " << ec << std::endl;
+  m_plug.audioProto().replace_tick = true;
 }
 
 void Clock::pause_impl(
     Engine::Execution::BaseScenarioElement& bs)
 {
-  Pa_StopStream( stream );
+  m_paused = true;
+  m_plug.audioProto().ui_tick = {};
+  m_plug.audioProto().replace_tick = true;
+  qDebug("pause");
   m_default.pause();
 }
 
 void Clock::resume_impl(
     Engine::Execution::BaseScenarioElement& bs)
 {
-  Pa_StartStream( stream );
+  m_paused = false;
   m_default.resume();
+  m_plug.audioProto().ui_tick = [this] (unsigned long frameCount) {
+    m_plug.execState.clear();
+    m_cur->baseConstraint().OSSIAConstraint()->tick(ossia::time_value(frameCount));
+    m_plug.execGraph->state(m_plug.execState);
+    m_plug.execState.commit();
+  };
+
+  m_plug.audioProto().replace_tick = true;
+  qDebug("resume");
 }
 
 void Clock::stop_impl(
     Engine::Execution::BaseScenarioElement& bs)
 {
-  Pa_StopStream( stream );
+  m_paused = false;
+  m_plug.audioProto().ui_tick = {};
+  m_plug.audioProto().replace_tick = true;
   m_default.stop();
+}
+
+bool Clock::paused() const
+{
+  return m_paused;
 }
 
 std::unique_ptr<Engine::Execution::ClockManager> ClockFactory::make(
@@ -152,12 +110,29 @@ std::unique_ptr<Engine::Execution::ClockManager> ClockFactory::make(
   return std::make_unique<Clock>(ctx);
 }
 
-std::function<ossia::time_value (const TimeVal&)> ClockFactory::makeTimeFunction() const
+std::function<ossia::time_value (const TimeVal&)>
+ClockFactory::makeTimeFunction(const iscore::DocumentContext& ctx) const
 {
-  // Go from milliseconds to samples
-  return [] {
-  }
-    ;
+  auto rate = ctx.plugin<Dataflow::DocumentPlugin>().audioProto().rate;
+  return [=] (const TimeVal& v) -> ossia::time_value {
+    // Go from milliseconds to samples
+    // 1000 ms = sr samples
+    // x ms    = k samples
+    return v.isInfinite()
+        ? ossia::Infinite
+        : ossia::time_value(std::llround(rate * v.msec() / 1000.));
+  };
+}
+
+std::function<TimeVal(const ossia::time_value&)>
+ClockFactory::makeReverseTimeFunction(const iscore::DocumentContext& ctx) const
+{
+  auto rate = ctx.plugin<Dataflow::DocumentPlugin>().audioProto().rate;
+  return [=] (const ossia::time_value& v) -> TimeVal {
+    return v.infinite()
+        ? TimeVal{PositiveInfinity{}}
+        : TimeVal::fromMsecs(1000. * v.impl / rate);
+  };
 }
 
 QString ClockFactory::prettyName() const
