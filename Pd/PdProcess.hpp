@@ -20,6 +20,7 @@ class ProcessModel final : public Dataflow::ProcessModel
         PROCESS_METADATA_IMPL(Pd::ProcessModel)
     Q_OBJECT
     public:
+          using base_type = Dataflow::ProcessModel;
         explicit ProcessModel(
                 const TimeVal& duration,
                 const Id<Process::ProcessModel>& id,
