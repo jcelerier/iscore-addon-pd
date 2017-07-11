@@ -148,6 +148,7 @@ class audio_protocol : public ossia::net::protocol_base
 
     ~audio_protocol()
     {
+      stop();
       Pa_Terminate();
     }
 
@@ -174,7 +175,11 @@ class audio_protocol : public ossia::net::protocol_base
 
     void stop()
     {
-
+      if(m_stream)
+      {
+        Pa_StopStream(m_stream);
+        m_stream = nullptr;
+      }
     }
 
     void reload()

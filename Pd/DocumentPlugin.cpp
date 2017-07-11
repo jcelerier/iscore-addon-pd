@@ -41,6 +41,7 @@ DocumentPlugin::DocumentPlugin(
 
 DocumentPlugin::~DocumentPlugin()
 {
+  audioproto->stop();
 
 }
 
