@@ -1,5 +1,6 @@
 #pragma once
 #include <Pd/DocumentPlugin.hpp>
+#include <Pd/PdProcess.hpp>
 #include <Scenario/Document/Components/ConstraintComponent.hpp>
 #include <Scenario/Document/Components/ProcessComponent.hpp>
 #include <Scenario/Document/Components/ScenarioComponent.hpp>
@@ -12,6 +13,7 @@
 #include <Process/Dataflow/DataflowObjects.hpp>
 namespace Dataflow
 {
+class NodeItem;
 
 class ISCORE_ADDON_PD_EXPORT ProcessComponent :
     public Scenario::GenericProcessComponent<DocumentPlugin>
@@ -19,17 +21,15 @@ class ISCORE_ADDON_PD_EXPORT ProcessComponent :
     Q_OBJECT
        ABSTRACT_COMPONENT_METADATA(Dataflow::ProcessComponent, "44f68a30-4bb1-4d94-940f-074f5b5b78fe")
   public:
+    NodeItem* ui{};
     ProcessComponent(
         Process::ProcessModel& process,
         DocumentPlugin& doc,
         const Id<iscore::Component>& id,
         const QString& name,
-        QObject* parent):
-      Scenario::GenericProcessComponent<DocumentPlugin>{process, doc, id, name, parent}
+        QObject* parent);
 
-    {
-
-    }
+    ~ProcessComponent();
 
     virtual std::size_t audioInlets() const = 0;
     virtual std::size_t messageInlets() const = 0;
@@ -44,10 +44,6 @@ class ISCORE_ADDON_PD_EXPORT ProcessComponent :
 
     virtual std::vector<Id<Process::Cable>> cables() const = 0;
     virtual void addCable(Id<Process::Cable> c) = 0;
-    virtual ~ProcessComponent()
-    {
-
-    }
 
   signals:
     void inletsChanged();
@@ -65,17 +61,11 @@ class ISCORE_ADDON_PD_EXPORT DataFlowProcessComponent : public ProcessComponent_
         DocumentPlugin& doc,
         const Id<iscore::Component>& id,
         const QString& name,
-        QObject* parent):
-      ProcessComponent_T<Process::DataflowProcess>{process, doc, id, name, parent}
-    {
-      connect(&process, &Process::DataflowProcess::inletsChanged, this, &ProcessComponent::inletsChanged);
-      connect(&process, &Process::DataflowProcess::outletsChanged, this, &ProcessComponent::outletsChanged);
+        QObject* parent);
 
-    }
-
-    std::size_t audioInlets() const { return process().audioInlets(); }
-    std::size_t messageInlets() const { return process().messageInlets(); }
-    std::size_t midiInlets() const { return process().midiInlets(); }
+    std::size_t audioInlets() const override { return process().audioInlets(); }
+    std::size_t messageInlets() const override { return process().messageInlets(); }
+    std::size_t midiInlets() const override { return process().midiInlets(); }
 
     std::size_t audioOutlets() const override { return process().audioOutlets(); }
     std::size_t messageOutlets() const override{ return process().messageOutlets(); }
@@ -146,26 +136,14 @@ class ConstraintBase :
         const Id<iscore::Component>& id,
         Scenario::ConstraintModel& constraint,
         DocumentPlugin& doc,
-        QObject* parent_comp):
-      parent_t{constraint, doc, id, "ConstraintComponent", parent_comp}
-    {
-      qDebug("party hard");
-
-    }
+        QObject* parent_comp);
 
     ProcessComponent* make(
         const Id<iscore::Component> & id,
         ProcessComponentFactory& factory,
-        Process::ProcessModel &process)
-    {
-      return factory.make(process, system(), id, this);
-    }
+        Process::ProcessModel &process);
 
-    bool removing(const Process::ProcessModel& cst, const ProcessComponent& comp)
-    {
-
-      return true;
-    }
+    bool removing(const Process::ProcessModel& cst, const ProcessComponent& comp);
 
     template <typename... Args>
     void removed(Args&&...)
@@ -210,9 +188,9 @@ class ScenarioBase :
     void removed(Args&&...) { }
 
 
-    std::size_t audioInlets() const { return 0; }
-    std::size_t messageInlets() const { return 0; }
-    std::size_t midiInlets() const { return 0; }
+    std::size_t audioInlets() const override { return 0; }
+    std::size_t messageInlets() const override { return 0; }
+    std::size_t midiInlets() const override { return 0; }
 
     std::size_t audioOutlets() const override { return 0; }
     std::size_t messageOutlets() const override{ return 0; }
@@ -232,6 +210,23 @@ ScenarioBase,
 Scenario::ProcessModel,
 Constraint>;
 
-
 using ScenarioComponentFactory = ProcessComponentFactory_T<ScenarioComponent>;
+
+
+class PdComponent :
+  public DataFlowProcessComponent
+{
+  COMPONENT_METADATA("cbd653fc-2e29-4eb9-8f89-acf0074e8ec0")
+  public:
+    PdComponent(
+        Process::DataflowProcess& process,
+        DocumentPlugin& doc,
+        const Id<iscore::Component>& id,
+        QObject* parent);
+    private:
+
+};
+
+using PdComponentFactory = ProcessComponentFactory_T<PdComponent>;
+
 }

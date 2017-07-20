@@ -50,7 +50,7 @@ public:
   void on_connectionCreated(QtNodes::Connection& c);
   void on_connectionUpdated(QtNodes::Connection& c);
   void on_connectionDeleted(QtNodes::Connection& c);
-  void on_connectionTypeChanged(QList<QtNodes::Connection*> c, Process::CableType t);
+  void on_connectionTypeChanged(QList<QQuickItem*> c, Process::CableType t);
   void on_nodeMoved(QtNodes::Node& c, const QPointF& pos);
   void on_released(QPointF);
 

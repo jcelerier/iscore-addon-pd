@@ -417,18 +417,18 @@ Component::Component(
     if(!cable.exec)
     {
       std::cerr << "\n\nConnect 2\n";
-      if(cable.source == &element)
+      if(cable.source() == &element)
         cable.source_node = node;
-      if(cable.sink == &element)
+      if(cable.sink() == &element)
         cable.sink_node = node;
 
       std::cerr << cable.source_node.get() << " && " << cable.sink_node.get() << "\n";
-      if(cable.source_node && cable.sink_node && cable.inlet && cable.outlet)
+      if(cable.source_node && cable.sink_node && cable.inlet() && cable.outlet())
       {
         std::cerr << "\n\nConnect 3\n";
-        auto& outlet = cable.source_node->outputs()[*cable.outlet];
-        auto& inlet = cable.sink_node->inputs()[*cable.inlet];
-        switch(cable.type)
+        auto& outlet = cable.source_node->outputs()[*cable.outlet()];
+        auto& inlet = cable.sink_node->inputs()[*cable.inlet()];
+        switch(cable.type())
         {
           case Process::CableType::ImmediateStrict:
           {

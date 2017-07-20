@@ -15,7 +15,7 @@
 #include <z_libpd.h>
 #include <iscore_addon_pd_export.h>
 
-namespace Dataflow
+namespace Pd
 {
 
 template <typename ProcessComponent_T>
@@ -41,9 +41,6 @@ public:
 };
 
 
-}
-namespace Pd
-{
 class ProcessModel;
 
 class ISCORE_ADDON_PD_EXPORT PdGraphNode final :
@@ -130,5 +127,5 @@ class Component final :
 };
 
 
-using ComponentFactory = Dataflow::ProcessComponentFactory_T<Pd::Component>;
+using ComponentFactory = Pd::ProcessComponentFactory_T<Pd::Component>;
 }

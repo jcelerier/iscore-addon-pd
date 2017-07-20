@@ -52,11 +52,11 @@ CreateCable::CreateCable(
   : m_model{dp}
   , m_cable{std::move(theCable)}
 {
-  m_dat.inlet = cable.inlet;
-  m_dat.outlet = cable.outlet;
-  m_dat.source = *cable.source;
-  m_dat.sink = *cable.sink;
-  m_dat.type = cable.type;
+  m_dat.inlet = cable.inlet();
+  m_dat.outlet = cable.outlet();
+  m_dat.source = *cable.source();
+  m_dat.sink = *cable.sink();
+  m_dat.type = cable.type();
 }
 
 void CreateCable::undo(const iscore::DocumentContext& ctx) const
@@ -99,11 +99,11 @@ UpdateCable::UpdateCable(
   , m_cable{cable.id()}
   , m_new{std::move(newDat)}
 {
-  m_old.inlet = cable.inlet;
-  m_old.outlet = cable.outlet;
-  m_old.source = *cable.source;
-  m_old.sink = *cable.sink;
-  m_old.type = cable.type;
+  m_old.inlet = cable.inlet();
+  m_old.outlet = cable.outlet();
+  m_old.source = *cable.source();
+  m_old.sink = *cable.sink();
+  m_old.type = cable.type();
 }
 
 void UpdateCable::undo(const iscore::DocumentContext& ctx) const

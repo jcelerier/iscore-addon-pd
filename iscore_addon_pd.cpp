@@ -43,6 +43,9 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
         , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
         , FW<Device::ProtocolFactory, Pd::AudioProtocolFactory>
+        , FW<Dataflow::ProcessComponentFactory
+            , Dataflow::PdComponentFactory
+            , Dataflow::ScenarioComponentFactory>
     >(ctx, key);
 }
 
