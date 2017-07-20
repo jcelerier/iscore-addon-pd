@@ -10,6 +10,7 @@
 #include <iscore_addon_pd_commands_files.hpp>
 #include <Pd/Devices/AudioDevice.hpp>
 #include <Scenario/iscore_plugin_scenario.hpp>
+#include <Pd/UI/ScenarioNode.hpp>
 #include <iscore_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -76,9 +77,16 @@ iscore_addon_pd::~iscore_addon_pd()
 
 }
 
+std::vector<std::unique_ptr<iscore::InterfaceListBase> > iscore_addon_pd::factoryFamilies()
+{
+  return make_ptr_vector<iscore::InterfaceListBase,
+      Dataflow::ProcessComponentFactoryList>();
+
+}
+
 iscore::Version iscore_addon_pd::version() const
 {
-    return iscore::Version{1};
+  return iscore::Version{1};
 }
 
 UuidKey<iscore::Plugin> iscore_addon_pd::key() const

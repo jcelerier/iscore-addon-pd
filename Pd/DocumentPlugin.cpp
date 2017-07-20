@@ -8,6 +8,9 @@
 #include <Engine/iscore2OSSIA.hpp>
 #include <ossia/dataflow/audio_address.hpp>
 #include <iscore/tools/IdentifierGeneration.hpp>
+#include <Pd/UI/ScenarioNode.hpp>
+#include <Scenario/Document/ScenarioDocument/ScenarioDocumentModel.hpp>
+#include <iscore/document/DocumentInterface.hpp>
 namespace Dataflow
 {
 
@@ -21,6 +24,9 @@ DocumentPlugin::DocumentPlugin(
     audio_dev{std::unique_ptr<ossia::net::protocol_base>(audioproto), "audio"},
     midi_dev{std::make_unique<ossia::net::multiplex_protocol>(), "midi"}
 {
+  auto& md = iscore::IDocument::modelDelegate<Scenario::ScenarioDocumentModel>(ctx.document);
+  auto& scenar = dynamic_cast<Scenario::ProcessModel&>(*md.baseConstraint().processes.begin());
+  auto plug = new Dataflow::ScenarioComponent(scenar, *this, Id<iscore::Component>{}, this);
   con(window.scene, &QtNodes::FlowScene::connectionCreated,
       this, &DocumentPlugin::on_connectionCreated);
   con(window.scene, &QtNodes::FlowScene::connectionDeleted,

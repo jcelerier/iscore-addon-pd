@@ -160,6 +160,18 @@ class audio_protocol : public ossia::net::protocol_base
     {
       return false;
     }
+    bool push_bundle(const std::vector<const ossia::net::address_base*>&) override
+    {
+      return false;
+    }
+    bool push_raw(const ossia::net::full_address_data&) override
+    {
+      return false;
+    }
+    bool push_raw_bundle(const std::vector<ossia::net::full_address_data>&) override
+    {
+      return false;
+    }
     bool observe(ossia::net::address_base&, bool) override
     {
       return false;
