@@ -5,21 +5,25 @@
 namespace Dataflow
 {
 
+void ProcessComponent::cleanup()
+{
+  qDebug("deleting");
+  DocumentPlugin& p = this->system();
+  for(const auto& cable : cables())
+  {
+    p.cables.remove(cable);
+  }
+}
 ProcessComponent::ProcessComponent(
     Process::ProcessModel& process,
     DocumentPlugin& doc,
     const Id<iscore::Component>& id,
     const QString& name,
     QObject* parent):
-  Scenario::GenericProcessComponent<DocumentPlugin>{process, doc, id, name, parent}
+  Process::GenericProcessComponent<DocumentPlugin>{process, doc, id, name, parent}
 
 {
 
-}
-
-ProcessComponent::~ProcessComponent()
-{
-  delete ui;
 }
 
 DataFlowProcessComponent::DataFlowProcessComponent(
@@ -34,9 +38,15 @@ DataFlowProcessComponent::DataFlowProcessComponent(
   connect(&process, &Process::DataflowProcess::outletsChanged, this, &ProcessComponent::outletsChanged);
 
 
-  ui = new NodeItem{*this};
-  ui->setParentItem(doc.window.view.contentItem());
-  ui->setPosition(QPointF(50, 50));
+  auto itm = new NodeItem{*this};
+  itm->setParentItem(doc.window.view.contentItem());
+  itm->setPosition(QPointF(50, 50));
+  ui = itm;
+}
+
+DataFlowProcessComponent::~DataFlowProcessComponent()
+{
+  cleanup();
 }
 
 ConstraintBase::ConstraintBase(
@@ -53,7 +63,7 @@ ProcessComponent*ConstraintBase::make(
     ProcessComponentFactory& factory,
     Process::ProcessModel& process)
 {
-  return factory.make(process, system(), id, this);
+  return factory.make(process, system(), id, &process);
 }
 
 bool ConstraintBase::removing(
@@ -72,5 +82,4 @@ PdComponent::PdComponent(
   DataFlowProcessComponent{process, doc, id, "Pd", parent}
 {
 }
-
 }

@@ -11,6 +11,7 @@
 #include <Pd/Devices/AudioDevice.hpp>
 #include <Scenario/iscore_plugin_scenario.hpp>
 #include <Pd/UI/ScenarioNode.hpp>
+#include <Pd/UI/AutomationNode.hpp>
 #include <iscore_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -45,7 +46,9 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
         , FW<Device::ProtocolFactory, Pd::AudioProtocolFactory>
         , FW<Dataflow::ProcessComponentFactory
             , Dataflow::PdComponentFactory
-            , Dataflow::ScenarioComponentFactory>
+            , Dataflow::ScenarioComponentFactory
+            , Dataflow::AutomationComponentFactory
+        >
     >(ctx, key);
 }
 

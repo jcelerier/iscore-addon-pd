@@ -407,9 +407,22 @@ Component::Component(
       std::make_shared<ossia::node_process>(df.execGraph, node);
 
 
+  connectCables(
+        iscore::component<Dataflow::ProcessComponent>(element.components()),
+        df);
+}
+
+PdGraphNode* PdGraphNode::m_currentInstance;
+
+void DataflowProcessComponent::connectCables(
+    Dataflow::ProcessComponent& element,
+    const Dataflow::DocumentPlugin& df)
+{
+
+
   ///  Connect the cables
   ///
-  for(auto id : element.cables)
+  for(auto id : element.cables())
   {
     std::cerr << "\n\nConnect 1\n";
     auto& cable = df.cables.at(id);
@@ -465,10 +478,7 @@ Component::Component(
       }
     }
   }
-
 }
-
-PdGraphNode* PdGraphNode::m_currentInstance;
 
 }
 

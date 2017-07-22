@@ -1,5 +1,4 @@
 #pragma once
-#include <Pd/UI/View.hpp>
 #include <QPointer>
 #include <QGraphicsSceneMouseEvent>
 #include <Pd/DataflowProcess.hpp>
@@ -11,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QDialog>
 #include <QQmlComponent>
+#include <QQuickWindow>
 #include <QQmlEngine>
 namespace Dataflow
 {
@@ -24,10 +24,12 @@ public:
   {
     window.setMinimumSize(600, 600);
     layout.addWidget(&menu);
-    view.show();
-    //auto widg = QWidget::createWindowContainer(&view, &window);
-    //layout.addWidget(widg);
-    //widg->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    menu.setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Maximum);
+    menu.setMaximumHeight(30);
+    auto widg = QWidget::createWindowContainer(&view, &window);
+    layout.addWidget(widg);
+    view.setColor(QColor::fromHslF(0.65, 0.1, 0.3));
+    widg->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
     // ImmediateGlutton, ImmediateStrict, DelayedGlutton, DelayedStrict
     a1->setCheckable(true);
@@ -52,7 +54,7 @@ public:
     connect(a4, &QAction::toggled, this, &DataflowWindow::on_typeChanged);
   }
 
-  void cableSelected(QtNodes::Connection& con)
+  void cableSelected(Id<Process::Cable> con)
   {/*
     selected.push_back(&con);
     auto go = static_cast<CustomConnection*>(&con.getConnectionGraphicsObject());

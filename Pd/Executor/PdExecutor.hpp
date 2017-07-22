@@ -106,6 +106,9 @@ class DataflowProcessComponent :
 
     public:
         using Engine::Execution::ProcessComponent::ProcessComponent;
+    void connectCables(
+        Dataflow::ProcessComponent& comp,
+        const Dataflow::DocumentPlugin& df);
 
   std::shared_ptr<ossia::graph_node> node;
 };

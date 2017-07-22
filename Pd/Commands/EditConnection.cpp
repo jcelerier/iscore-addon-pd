@@ -43,7 +43,7 @@ CreateCable::CreateCable(
   , m_cable{std::move(theCable)}
   , m_dat{std::move(dat)}
 {
-
+  ISCORE_ASSERT(m_dat.source != m_dat.sink);
 }
 
 CreateCable::CreateCable(
@@ -57,28 +57,24 @@ CreateCable::CreateCable(
   m_dat.source = *cable.source();
   m_dat.sink = *cable.sink();
   m_dat.type = cable.type();
+
+  ISCORE_ASSERT(m_dat.source != m_dat.sink);
 }
 
 void CreateCable::undo(const iscore::DocumentContext& ctx) const
 {
-  auto& src = m_dat.source.find(ctx).cables;
-  src.erase(ossia::find(src, m_cable));
-
-  auto& sink = m_dat.sink.find(ctx).cables;
-  sink.erase(ossia::find(sink, m_cable));
-
-  m_model.find(ctx).removeConnection(m_cable);
+  m_dat.source.find(ctx).removeCable(m_cable);
+  m_dat.sink.find(ctx).removeCable(m_cable);
+  m_model.find(ctx).cables.remove(m_cable);
 }
 
 void CreateCable::redo(const iscore::DocumentContext& ctx) const
 {
-  auto& model = m_model.find(ctx);
   auto c = new Process::Cable{ctx, m_cable, m_dat};
-  model.quiet_createConnection(c);
-  model.createGuiConnection(*c);
 
-  m_dat.source.find(ctx).cables.push_back(m_cable);
-  m_dat.sink.find(ctx).cables.push_back(m_cable);
+  m_model.find(ctx).cables.add(c);
+  m_dat.source.find(ctx).addCable(m_cable);
+  m_dat.sink.find(ctx).addCable(m_cable);
 }
 
 void CreateCable::serializeImpl(DataStreamInput& s) const
@@ -93,10 +89,8 @@ void CreateCable::deserializeImpl(DataStreamOutput& s)
 
 
 
-UpdateCable::UpdateCable(
-    const Dataflow::DocumentPlugin& dp, Process::Cable& cable, Process::CableData newDat)
-  : m_model{dp}
-  , m_cable{cable.id()}
+UpdateCable::UpdateCable(Process::Cable& cable, Process::CableData newDat)
+  : m_model{cable}
   , m_new{std::move(newDat)}
 {
   m_old.inlet = cable.inlet();
@@ -108,24 +102,22 @@ UpdateCable::UpdateCable(
 
 void UpdateCable::undo(const iscore::DocumentContext& ctx) const
 {
-  auto& dp = m_model.find(ctx);
-  dp.updateConnection(dp.cables.at(m_cable), m_old);
+  m_model.find(ctx).update(ctx, m_old);
 }
 
 void UpdateCable::redo(const iscore::DocumentContext& ctx) const
 {
-  auto& dp = m_model.find(ctx);
-  dp.updateConnection(dp.cables.at(m_cable), m_new);
+  m_model.find(ctx).update(ctx, m_new);
 }
 
 void UpdateCable::serializeImpl(DataStreamInput& s) const
 {
-  s << m_model << m_cable << m_old << m_new;
+  s << m_model << m_old << m_new;
 }
 
 void UpdateCable::deserializeImpl(DataStreamOutput& s)
 {
-  s >> m_model >> m_cable >> m_old >> m_new;
+  s >> m_model >> m_old >> m_new;
 }
 
 

@@ -59,7 +59,6 @@ class UpdateCable final : public iscore::Command
 
   public:
     UpdateCable(
-      const Dataflow::DocumentPlugin& dp,
       Process::Cable& theCable, Process::CableData newDat);
 
   void undo(const iscore::DocumentContext& ctx) const override;
@@ -70,8 +69,7 @@ protected:
   void deserializeImpl(DataStreamOutput& s) override;
 
 private:
-  Path<Dataflow::DocumentPlugin> m_model;
-  Id<Process::Cable> m_cable;
+  Path<Process::Cable> m_model;
   Process::CableData m_old, m_new;
 };
 

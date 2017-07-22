@@ -6,7 +6,6 @@
 #include <Process/TimeValue.hpp>
 #include <iscore/serialization/VisitorInterface.hpp>
 #include <ossia/dataflow/dataflow.hpp>
-namespace QtNodes { class Node; }
 namespace Dataflow
 {
 class CustomDataModel;
@@ -21,9 +20,6 @@ class ProcessModel : public Process::DataflowProcess
 
     ProcessModel(DataStream::Deserializer& vis, QObject* parent);
     ProcessModel(JSONObject::Deserializer& vis, QObject* parent);
-
-    QPointer<CustomDataModel> nodeModel{};
-    QPointer<QtNodes::Node> node{};
 
     QPointF pos() const;
 

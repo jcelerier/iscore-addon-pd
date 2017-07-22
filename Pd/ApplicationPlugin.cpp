@@ -23,7 +23,6 @@ ApplicationPlugin::ApplicationPlugin(
     if(doc)
     {
       auto& plug = doc->context().plugin<DocumentPlugin>();
-      plug.reload();
       plug.window.window.show();
     }
   });
