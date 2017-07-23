@@ -71,9 +71,12 @@ PdGraphNode::PdGraphNode(
 
   // Create instance
   m_instance = pdinstance_new();
+  qDebug() << "PdGraphNode: Allocating " << m_instance;
   pd_setinstance(m_instance);
 
   // Enable audio
+  libpd_init_audio(m_inputs, m_outputs, 44100);
+
   libpd_start_message(1);
   libpd_add_float(1.0f);
   libpd_finish_message("pd", "dsp");
@@ -204,6 +207,7 @@ PdGraphNode::PdGraphNode(
 
 PdGraphNode::~PdGraphNode()
 {
+  qDebug() << "PdGraphNode: Freeeing " << m_instance;
   pdinstance_free(m_instance);
 }
 
@@ -309,7 +313,7 @@ void PdGraphNode::run(ossia::execution_state& e)
   }
 
   // Process
-  libpd_process_raw(m_inbuf.data(), m_outbuf.data());
+  libpd_process_float(1, m_inbuf.data(), m_outbuf.data());
 
   // Copy audio outputs. Message inputs are copied in callbacks.
   for(std::size_t i = 0U; i < m_outputs; ++i)
@@ -374,14 +378,6 @@ Component::Component(
 
     outlet_addresses[i] = df.resolve(e.address);
   }
-
-  qDebug() << "inlets";
-  for(auto addr : inlet_addresses)
-    qDebug() << (addr ? ossia::net::address_string_from_node(*addr).c_str() : "No addr");
-
-  qDebug() << "outlets";
-  for(auto addr : outlet_addresses)
-    qDebug() << (addr ? ossia::net::address_string_from_node(*addr).c_str() : "No addr");
 
   node = std::make_shared<PdGraphNode>(
         f.canonicalPath().toStdString(),

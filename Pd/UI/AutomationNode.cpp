@@ -93,7 +93,6 @@ void AutomExecComponent::recompute()
           ,graph=m_df.execGraph
           ]
     {
-      qDebug() << "Removing";
       proc->set_node(nullptr);
       graph->remove_node(n);
     });
@@ -118,7 +117,6 @@ void AutomExecComponent::recompute()
 
     if (curve)
     {
-      qDebug() << "Creating curve";
       n = std::make_shared<AutomationGraphNode>(curve, addressType);
       n->outputs()[0]->address = &d.address();
     }
@@ -129,7 +127,6 @@ void AutomExecComponent::recompute()
     auto curve = on_curveChanged(ossia::val_type::FLOAT, {});
     if(curve)
     {
-      qDebug() << "creating simple curve";
       n = std::make_shared<AutomationGraphNode>(curve, ossia::val_type::FLOAT);
     }
   }
@@ -146,8 +143,6 @@ void AutomExecComponent::recompute()
     {
       proc->set_node(node);
       graph->add_node(node);
-
-      qDebug() << "Node was set";
     });
   }
 
@@ -204,7 +199,6 @@ AutomExecComponent::on_curveChanged(
 
 void AutomationGraphNode::run(ossia::execution_state& e)
 {
-  qDebug("node running");
   auto base_curve = m_curve.get();
   if (!base_curve)
   {
@@ -281,7 +275,6 @@ void AutomationGraphNode::run(ossia::execution_state& e)
 
   ossia::value_port* vp = m_outlets[0]->data.target<ossia::value_port>();
   vp->data.push_back(v);
-  qDebug("node finished");
 }
 
 }

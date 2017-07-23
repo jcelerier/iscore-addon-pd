@@ -36,6 +36,7 @@ Clock::~Clock()
     cbl.sink_node.reset();
     cbl.exec.reset();
   }
+  m_plug.execGraph->clear();
   m_plug.execGraph = std::make_shared<ossia::graph>();
   Pa_Terminate();
 }
@@ -185,7 +186,47 @@ void Clock::stop_impl(
     Engine::Execution::BaseScenarioElement& bs)
 {
   m_paused = false;
-  m_plug.audioProto().ui_tick = {};
+  auto plug_ptr = &m_plug;
+  m_plug.audioProto().ui_tick = [plug_ptr] (unsigned long)
+  {
+    DocumentPlugin& plug = *plug_ptr;
+    plug.execGraph->clear();
+    plug.execGraph = std::make_shared<ossia::graph>();
+
+    for(auto& cable : plug.cables)
+    {
+      if(cable.source_node)
+      {
+        cable.source_node->clear();
+        cable.source_node.reset();
+      }
+
+      if(cable.sink_node)
+      {
+        cable.sink_node->clear();
+        cable.sink_node.reset();
+      }
+
+      if(cable.exec)
+      {
+        cable.exec->clear();
+        cable.exec.reset();
+      }
+    }
+
+    for(auto cld : plug.context().document.findChildren<Dataflow::ProcessComponent*>())
+    {
+      if(cld->exec)
+      {
+        cld->exec->clear();
+        cld->exec.reset();
+      }
+    }
+
+    plug.audioProto().ui_tick = { };
+    plug.audioProto().replace_tick = true;
+    qDebug("everything is clear");
+  };
   m_plug.audioProto().replace_tick = true;
   m_default.stop();
 }

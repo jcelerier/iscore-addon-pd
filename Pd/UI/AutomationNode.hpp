@@ -100,6 +100,11 @@ public:
       const Id<iscore::Component>& id,
       QObject* parent);
 
+  ~AutomExecComponent()
+  {
+    if(node) node->clear();
+  }
+
 private:
   void recompute();
 
@@ -110,7 +115,7 @@ private:
   std::shared_ptr<ossia::curve_abstract>
   on_curveChanged_impl(const optional<ossia::Destination>&);
 
-  std::shared_ptr<ossia::graph_node> node;
+  ossia::node_ptr node;
   const Dataflow::DocumentPlugin& m_df;
 };
 using AutomExecComponentFactory

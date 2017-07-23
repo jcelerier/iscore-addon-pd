@@ -1,4 +1,6 @@
 #pragma once
+#define PDINSTANCE
+
 #include <ossia/editor/scenario/time_process.hpp>
 #include <QJSEngine>
 #include <QJSValue>
@@ -10,9 +12,9 @@
 #include <iscore/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
 #include <Device/Protocol/DeviceList.hpp>
+#include <z_libpd.h>
 #include <Pd/DocumentPlugin.hpp>
 #include <ossia/detail/string_view.hpp>
-#include <z_libpd.h>
 #include <iscore_addon_pd_export.h>
 
 namespace Pd
@@ -108,7 +110,12 @@ class DataflowProcessComponent :
     public:
         using Engine::Execution::ProcessComponent::ProcessComponent;
 
-  std::shared_ptr<ossia::graph_node> node;
+    ~DataflowProcessComponent()
+    {
+      if(node) node->clear();
+    }
+
+  ossia::node_ptr node;
 };
 
 class Component final :

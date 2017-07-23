@@ -98,47 +98,7 @@ class audio_protocol : public ossia::net::protocol_base
         unsigned long frameCount,
         const PaStreamCallbackTimeInfo* timeInfo,
         PaStreamCallbackFlags statusFlags,
-        void *userData)
-    {
-      using idx_t = gsl::span<float>::index_type;
-      const idx_t fc = frameCount;
-      auto& self = *static_cast<audio_protocol*>(userData);
-
-      auto float_input = ((float **) input);
-      auto float_output = ((float **) output);
-
-      // Prepare audio inputs
-      const int n_in_channels = self.audio_ins.size();
-      for(int i = 0; i < n_in_channels; i++)
-      {
-        self.audio_ins[i]->audio = {float_input[i], fc};
-      }
-
-      // Prepare audio outputs
-      const int n_out_channels = self.audio_outs.size();
-      for(int i = 0; i < n_out_channels; i++)
-      {
-        self.audio_outs[i]->audio = {float_output[i], fc};
-
-        for(int j = 0; j < (int)frameCount; j++)
-        {
-          float_output[i][j] = 0;
-       }
-      }
-
-      // Run a tick
-      if(self.replace_tick)
-      {
-        self.audio_tick = std::move(self.ui_tick);
-        self.ui_tick = {};
-        self.replace_tick = false;
-      }
-      if(self.audio_tick)
-      {
-        self.audio_tick(frameCount);
-      }
-      return paContinue;
-    }
+        void *userData);
 
     audio_protocol()
     {
@@ -196,6 +156,8 @@ class audio_protocol : public ossia::net::protocol_base
 
     void reload()
     {
+      stop();
+
       auto inputInfo = Pa_GetDeviceInfo(Pa_GetDefaultInputDevice());
       auto outputInfo = Pa_GetDeviceInfo(Pa_GetDefaultOutputDevice());
       inputs = inputInfo->maxInputChannels;
@@ -228,6 +190,7 @@ class audio_protocol : public ossia::net::protocol_base
       outputParameters.suggestedLatency = 0.01;
       outputParameters.hostApiSpecificStreamInfo = nullptr;
 
+      qDebug("=== stream start ===");
       auto ec = Pa_OpenStream(&m_stream,
                               &inputParameters,
                               &outputParameters,
