@@ -3,17 +3,27 @@
 #include <Engine/Executor/ClockManager/DefaultClockManager.hpp>
 
 #include <portaudio.h>
+namespace Process
+{
+class Cable;
+}
 namespace Dataflow
 {
 class DocumentPlugin;
-class Clock final :
-        public Engine::Execution::ClockManager
+class Clock final
+    : public Engine::Execution::ClockManager
+    , public Nano::Observer
 {
     public:
         Clock(const Engine::Execution::Context& ctx);
 
         ~Clock();
 private:
+        void on_cableCreated(Process::Cable& c);
+        void on_cableRemoved(const Process::Cable& c);
+
+        void connectCable(Process::Cable& cable);
+
         // Clock interface
         void play_impl(
                 const TimeVal& t,

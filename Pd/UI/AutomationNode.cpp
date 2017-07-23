@@ -48,7 +48,7 @@ AutomationComponent::AutomationComponent(
 
 
 
-ExecComponent::ExecComponent(
+AutomExecComponent::AutomExecComponent(
     Engine::Execution::ConstraintComponent& parentConstraint,
     Automation::ProcessModel& element,
     const Dataflow::DocumentPlugin& df,
@@ -56,14 +56,14 @@ ExecComponent::ExecComponent(
     const Id<iscore::Component>& id,
     QObject* parent)
   : Engine::Execution::
-    ProcessComponent_T<Automation::ProcessModel, ossia::automation>{
+    ProcessComponent_T<Automation::ProcessModel, ossia::node_process>{
       parentConstraint,
       element,
       ctx,
       id, "Executor::AutomationComponent", parent}
   , m_df{df}
 {
-  m_ossia_process = std::make_shared<ossia::automation>();
+  m_ossia_process = std::make_shared<ossia::node_process>(m_df.execGraph);
 
   con(element, &Automation::ProcessModel::addressChanged,
       this, [this] (const auto&) { this->recompute(); });
@@ -82,15 +82,34 @@ ExecComponent::ExecComponent(
   recompute();
 }
 
-void ExecComponent::recompute()
+void AutomExecComponent::recompute()
 {
+  // First remove the existing node
+  if(this->node)
+  {
+    system().executionQueue.enqueue(
+          [n=this->node
+          ,proc=std::dynamic_pointer_cast<ossia::node_process>(m_ossia_process)
+          ,graph=m_df.execGraph
+          ]
+    {
+      qDebug() << "Removing";
+      proc->set_node(nullptr);
+      graph->remove_node(n);
+    });
+    node.reset();
+  }
+
+  // Compute the new node
+
   auto dest = Engine::iscore_to_ossia::makeDestination(
                 system().devices.list(),
                 process().address());
 
+  std::shared_ptr<AutomationGraphNode> n;
   if (dest)
   {
-    auto& d = *dest;
+    ossia::Destination& d = *dest;
     auto addressType = d.address().get_value_type();
 
     auto curve = process().tween()
@@ -99,34 +118,45 @@ void ExecComponent::recompute()
 
     if (curve)
     {
-      system().executionQueue.enqueue(
-            [proc=std::dynamic_pointer_cast<ossia::automation>(m_ossia_process)
-            ,curve
-            ,d_=d]
-      {
-        proc->set_destination(std::move(d_));
-        proc->set_behavior(curve);
-      });
-      return;
+      qDebug() << "Creating curve";
+      n = std::make_shared<AutomationGraphNode>(curve, addressType);
+      n->outputs()[0]->address = &d.address();
     }
   }
   else
   {
-
+    // Create a float automation
+    auto curve = on_curveChanged(ossia::val_type::FLOAT, {});
+    if(curve)
+    {
+      qDebug() << "creating simple curve";
+      n = std::make_shared<AutomationGraphNode>(curve, ossia::val_type::FLOAT);
+    }
   }
 
-  m_ossia_process =
-      std::make_shared<ossia::node_process>(m_df.execGraph, node);
+  // Set the node in the process
+  if(n)
+  {
+    node = n;
+    system().executionQueue.enqueue(
+          [node=this->node
+          ,proc=std::dynamic_pointer_cast<ossia::node_process>(m_ossia_process)
+          ,graph=m_df.execGraph
+          ]
+    {
+      proc->set_node(node);
+      graph->add_node(node);
 
-  /*
-  connectCables(
-        iscore::component<Dataflow::ProcessComponent>(element.components()),
-        m_df);
-*/}
+      qDebug() << "Node was set";
+    });
+  }
+
+  iscore::component<Dataflow::ProcessComponent>(process().components()).exec = node;
+}
 
 template <typename Y_T>
 std::shared_ptr<ossia::curve_abstract>
-ExecComponent::on_curveChanged_impl(const optional<ossia::Destination>& d)
+AutomExecComponent::on_curveChanged_impl(const optional<ossia::Destination>& d)
 {
   using namespace ossia;
 
@@ -149,7 +179,7 @@ ExecComponent::on_curveChanged_impl(const optional<ossia::Destination>& d)
 }
 
 std::shared_ptr<ossia::curve_abstract>
-ExecComponent::on_curveChanged(
+AutomExecComponent::on_curveChanged(
     ossia::val_type type,
     const optional<ossia::Destination>& d)
 {
@@ -174,8 +204,7 @@ ExecComponent::on_curveChanged(
 
 void AutomationGraphNode::run(ossia::execution_state& e)
 {
-  ossia::val_type driven_type{ossia::val_type::FLOAT};
-
+  qDebug("node running");
   auto base_curve = m_curve.get();
   if (!base_curve)
   {
@@ -186,7 +215,7 @@ void AutomationGraphNode::run(ossia::execution_state& e)
   auto t = base_curve->get_type();
   if (t.first == ossia::curve_segment_type::DOUBLE)
   {
-    switch (driven_type)
+    switch (m_type)
     {
       case ossia::val_type::FLOAT:
       case ossia::val_type::INT:
@@ -252,6 +281,7 @@ void AutomationGraphNode::run(ossia::execution_state& e)
 
   ossia::value_port* vp = m_outlets[0]->data.target<ossia::value_port>();
   vp->data.push_back(v);
+  qDebug("node finished");
 }
 
 }

@@ -49,6 +49,15 @@ void ApplicationPlugin::on_initDocument(iscore::Document& doc)
       doc.context(), getStrongId(doc.model().pluginModels()), &doc.model()});
 }
 
+void ApplicationPlugin::on_createdDocument(iscore::Document& doc)
+{
+  auto plug = doc.context().findPlugin<DocumentPlugin>();
+  if (plug)
+  {
+    plug->init();
+  }
+}
+
 void ApplicationPlugin::on_documentChanged(
     iscore::Document* olddoc,
     iscore::Document* newdoc)

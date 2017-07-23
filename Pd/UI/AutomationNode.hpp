@@ -5,6 +5,7 @@
 #include <Process/Dataflow/DataflowObjects.hpp>
 #include <Process/Process.hpp>
 
+#include <Pd/Executor/PdExecutor.hpp>
 #include <ossia/editor/automation/automation.hpp>
 #include <ossia/editor/value/value.hpp>
 
@@ -65,12 +66,12 @@ class ISCORE_ADDON_PD_EXPORT AutomationGraphNode final :
 {
 public:
   AutomationGraphNode(
-      ossia::Destination dest,
-      std::shared_ptr<ossia::curve_abstract> curve):
-    m_dest{dest}
-  , m_curve{curve}
+      std::shared_ptr<ossia::curve_abstract> curve,
+      ossia::val_type addr)
+    : m_curve{curve}
+    , m_type{addr}
   {
-
+    m_outlets.push_back(ossia::make_outlet<ossia::value_port>());
   }
 
   ~AutomationGraphNode()
@@ -81,18 +82,18 @@ public:
 private:
   void run(ossia::execution_state& e) override;
 
-  ossia::Destination m_dest;
   std::shared_ptr<ossia::curve_abstract> m_curve{};
+  ossia::val_type m_type{};
 };
 
-class ExecComponent final
+class AutomExecComponent final
     : public ::Engine::Execution::
-          ProcessComponent_T<Automation::ProcessModel, ossia::automation>
+          ProcessComponent_T<Automation::ProcessModel, ossia::node_process>
 {
   COMPONENT_METADATA("f3ac9746-e994-42cc-a3d5-cfef89bcb7aa")
 public:
-  ExecComponent(
-      ::Engine::Execution::ConstraintComponent& parentConstraint,
+  AutomExecComponent(
+      Engine::Execution::ConstraintComponent& parentConstraint,
       Automation::ProcessModel& element,
       const Dataflow::DocumentPlugin& df,
       const ::Engine::Execution::Context& ctx,
@@ -112,7 +113,7 @@ private:
   std::shared_ptr<ossia::graph_node> node;
   const Dataflow::DocumentPlugin& m_df;
 };
-using ExecComponentFactory
-    = ::Engine::Execution::ProcessComponentFactory_T<ExecComponent>;
+using AutomExecComponentFactory
+    = Pd::ProcessComponentFactory_T<AutomExecComponent>;
 
 }

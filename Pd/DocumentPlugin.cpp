@@ -25,18 +25,20 @@ DocumentPlugin::DocumentPlugin(
     audio_dev{std::unique_ptr<ossia::net::protocol_base>(audioproto), "audio"},
     midi_dev{std::make_unique<ossia::net::multiplex_protocol>(), "midi"}
 {
-  auto& md = iscore::IDocument::modelDelegate<Scenario::ScenarioDocumentModel>(ctx.document);
-  m_constraint = new Dataflow::Constraint(Id<iscore::Component>{}, md.baseConstraint(), *this, this);
+  cables.mutable_added.connect<DocumentPlugin, &DocumentPlugin::on_cableAdded>(*this);
+  cables.removing.connect<DocumentPlugin, &DocumentPlugin::on_cableRemoving>(*this);
+}
 
+void DocumentPlugin::init()
+{
+  auto& md = iscore::IDocument::modelDelegate<Scenario::ScenarioDocumentModel>(context().document);
+  m_constraint = new Dataflow::Constraint(Id<iscore::Component>{}, md.baseConstraint(), *this, this);
 
   midi_ins.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/in"));
   midi_outs.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/out"));
 
   execGraph = std::make_shared<ossia::graph>();
   audioproto->reload();
-
-  cables.mutable_added.connect<DocumentPlugin, &DocumentPlugin::on_cableAdded>(*this);
-  cables.removing.connect<DocumentPlugin, &DocumentPlugin::on_cableRemoving>(*this);
 }
 
 DocumentPlugin::~DocumentPlugin()

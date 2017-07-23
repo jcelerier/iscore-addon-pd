@@ -19,6 +19,7 @@ private:
   iscore::GUIElements makeGUIElements() override;
 
   void on_initDocument(iscore::Document& doc) override;
+  void on_createdDocument(iscore::Document& doc) override;
 
   QAction* m_showScene{};
 

@@ -401,84 +401,14 @@ Component::Component(
     if(auto addr = outlet_addresses[i])
       node->outputs()[i]->address = addr;
   }
+  iscore::component<Dataflow::ProcessComponent>(element.components()).exec = node;
   df.execGraph->add_node(node);
 
   m_ossia_process =
       std::make_shared<ossia::node_process>(df.execGraph, node);
-
-
-  connectCables(
-        iscore::component<Dataflow::ProcessComponent>(element.components()),
-        df);
 }
 
 PdGraphNode* PdGraphNode::m_currentInstance;
-
-void DataflowProcessComponent::connectCables(
-    Dataflow::ProcessComponent& element,
-    const Dataflow::DocumentPlugin& df)
-{
-
-
-  ///  Connect the cables
-  ///
-  for(auto id : element.cables())
-  {
-    std::cerr << "\n\nConnect 1\n";
-    auto& cable = df.cables.at(id);
-    // Check if there is already a cable
-    if(!cable.exec)
-    {
-      std::cerr << "\n\nConnect 2\n";
-      if(cable.source() == &element)
-        cable.source_node = node;
-      if(cable.sink() == &element)
-        cable.sink_node = node;
-
-      std::cerr << cable.source_node.get() << " && " << cable.sink_node.get() << "\n";
-      if(cable.source_node && cable.sink_node && cable.inlet() && cable.outlet())
-      {
-        std::cerr << "\n\nConnect 3\n";
-        auto& outlet = cable.source_node->outputs()[*cable.outlet()];
-        auto& inlet = cable.sink_node->inputs()[*cable.inlet()];
-        switch(cable.type())
-        {
-          case Process::CableType::ImmediateStrict:
-          {
-           std::cerr << "\n\nConnect 4\n";
-           cable.exec = ossia::make_edge(
-                 ossia::immediate_strict_connection{},
-                 outlet, inlet, cable.source_node, cable.sink_node);
-            break;
-          }
-          case Process::CableType::ImmediateGlutton:
-          {
-           cable.exec = ossia::make_edge(
-                 ossia::immediate_glutton_connection{},
-                 outlet, inlet, cable.source_node, cable.sink_node);
-            break;
-          }
-          case Process::CableType::DelayedStrict:
-          {
-           cable.exec = ossia::make_edge(
-                 ossia::delayed_strict_connection{},
-                 outlet, inlet, cable.source_node, cable.sink_node);
-            break;
-          }
-          case Process::CableType::DelayedGlutton:
-          {
-           cable.exec = ossia::make_edge(
-                 ossia::delayed_glutton_connection{},
-                 outlet, inlet, cable.source_node, cable.sink_node);
-            break;
-          }
-        }
-
-        df.execGraph->connect(cable.exec);
-      }
-    }
-  }
-}
 
 }
 

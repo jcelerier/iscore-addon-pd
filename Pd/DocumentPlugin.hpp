@@ -17,8 +17,9 @@ namespace Dataflow
 {
 class CableItem;
 class Constraint;
-class DocumentPlugin final :
-    public iscore::DocumentPlugin
+class DocumentPlugin final
+    : public iscore::DocumentPlugin
+    , public Nano::Observer
 {
   Q_OBJECT
 public:
@@ -26,6 +27,8 @@ public:
       const iscore::DocumentContext& ctx,
       Id<iscore::DocumentPlugin> id,
       QObject* parent);
+
+    void init();
 
   virtual ~DocumentPlugin();
 

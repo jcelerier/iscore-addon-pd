@@ -39,7 +39,10 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
     return instantiate_factories<
             iscore::ApplicationContext,
          FW<Process::ProcessModelFactory, Pd::ProcessFactory>
-        , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
+        , FW<Engine::Execution::ProcessComponentFactory
+            , Pd::ComponentFactory
+            , Dataflow::AutomExecComponentFactory
+        >
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
         , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
@@ -55,6 +58,7 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
 iscore_addon_pd::iscore_addon_pd()
 {
     libpd_init();
+    // TODO should not be necessarey
     libpd_init_audio(2, 2, 44100);
 
     libpd_set_printhook([] (const char *s) { qDebug() << "string: " << s; });

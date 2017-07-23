@@ -23,6 +23,9 @@ Clock::Clock(
   auto& bs = context.scenario;
   if(!bs.active())
     return;
+
+  m_plug.cables.mutable_added.connect<Clock, &Clock::on_cableCreated>(*this);
+  m_plug.cables.removing.connect<Clock, &Clock::on_cableRemoved>(*this);
 }
 
 Clock::~Clock()
@@ -37,15 +40,103 @@ Clock::~Clock()
   Pa_Terminate();
 }
 
+void Clock::on_cableCreated(Process::Cable& c)
+{
+  connectCable(c);
+}
+
+void Clock::on_cableRemoved(const Process::Cable& c)
+{
+  auto cable = c.exec;
+  auto graph = m_plug.execGraph;
+
+  context.executionQueue.enqueue([cable,graph] {
+    graph->disconnect(cable);
+  });
+}
+
+void Clock::connectCable(Process::Cable& cable)
+{
+    std::cerr << "\n\nConnect 2\n";
+
+    if(cable.source())
+      cable.source_node = cable.source()->exec;
+    if(cable.sink())
+      cable.sink_node = cable.sink()->exec;
+
+    std::cerr << cable.source_node.get() << " && " << cable.sink_node.get() << "\n";
+    if(cable.source_node && cable.sink_node && cable.inlet() && cable.outlet())
+    {
+      std::cerr << "\n\nConnect 3\n";
+
+      context.executionQueue.enqueue(
+            [type=cable.type()
+            ,src=cable.source_node
+            ,snk=cable.sink_node
+            ,inlt=*cable.inlet()
+            ,outlt=*cable.outlet()
+            ,graph=m_plug.execGraph
+            ]
+      {
+        std::cerr << "\n\nConnect 4\n";
+        ossia::edge_ptr edge;
+        auto& outlet = src->outputs()[outlt];
+        auto& inlet = snk->inputs()[inlt];
+        switch(type)
+        {
+          case Process::CableType::ImmediateStrict:
+          {
+            std::cerr << "\n\nConnect ImmediateStrict\n";
+            edge = ossia::make_edge(
+                           ossia::immediate_strict_connection{},
+                           outlet, inlet, src, snk);
+            break;
+          }
+          case Process::CableType::ImmediateGlutton:
+          {
+            std::cerr << "\n\nConnect ImmediateGlutton\n";
+            edge = ossia::make_edge(
+                           ossia::immediate_glutton_connection{},
+                           outlet, inlet, src, snk);
+            break;
+          }
+          case Process::CableType::DelayedStrict:
+          {
+            std::cerr << "\n\nConnect DelayedStrict\n";
+            edge = ossia::make_edge(
+                           ossia::delayed_strict_connection{},
+                           outlet, inlet, src, snk);
+            break;
+          }
+          case Process::CableType::DelayedGlutton:
+          {
+            std::cerr << "\n\nConnect DelayedGlutton\n";
+            edge = ossia::make_edge(
+                           ossia::delayed_glutton_connection{},
+                           outlet, inlet, src, snk);
+            break;
+          }
+        }
+
+        graph->connect(edge);
+    });
+    }
+}
+
 void Clock::play_impl(
     const TimeVal& t,
     Engine::Execution::BaseScenarioElement& bs)
 {
   m_paused = false;
 
+  for(auto& cable : m_plug.cables)
+  {
+    connectCable(cable);
+  }
+
   std::stringstream s;
   boost::write_graphviz(s, m_plug.execGraph->m_graph, [&] (auto& out, const auto& v) {
-      out << "[label=\"" << (void*)m_plug.execGraph->m_graph[v].get() << "\"]";
+    out << "[label=\"" << (void*)m_plug.execGraph->m_graph[v].get() << "\"]";
   },
   [] (auto&&...) {});
 
