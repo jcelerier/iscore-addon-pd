@@ -2,6 +2,8 @@
 
 #include <Pd/Commands/EditConnection.hpp>
 
+#include <iscore/command/Dispatchers/CommandDispatcher.hpp>
+
 namespace Dataflow
 {
 const constexpr double portRadius = 3;
@@ -9,8 +11,9 @@ const constexpr double portUIRadius = portRadius + 1;
 const constexpr double portSize = 4;
 PortItem* hoveredPort{};
 CableItem* createdCable{};
-PortItem::PortItem(Type t, std::size_t idx,  NodeItem& node)
+PortItem::PortItem(const iscore::DocumentContext& ctx, Type t, std::size_t idx,  NodeItem& node)
   : QQuickPaintedItem{&node}
+  , m_ctx{ctx}
   , m_node{node}
   , m_type{t}
   , m_index{idx}
@@ -41,28 +44,27 @@ void PortItem::paint(QPainter* painter)
 
 void PortItem::mousePressEvent(QMouseEvent* ev)
 {
-  Process::CableData c;
+  auto cable = new Process::Cable{Id<Process::Cable>{}};
+
   if(m_type == Type::Inlet)
   {
-    c.inlet = m_index;
-    c.sink = m_node.process;
+    cable->setInlet(m_index);
+    cable->setSink(&m_node.node);
   }
   else if(m_type == Type::Outlet)
   {
-    c.outlet = m_index;
-    c.source = m_node.process;
+    cable->setOutlet(m_index);
+    cable->setSource(&m_node.node);
   }
   else if(m_type == Type::DependencyInlet)
   {
-    c.sink = m_node.process;
+    cable->setSink(&m_node.node);
   }
   else if(m_type == Type::DependencyOutlet)
   {
-    c.source = m_node.process;
+    cable->setSource(&m_node.node);
   }
 
-  const iscore::DocumentContext& ctx = m_node.process.system().context();
-  auto cable = new Process::Cable{ctx, Id<Process::Cable>{}, c};
   createdCable = new CableItem{*cable};
   createdCable->setParentItem(this->parentItem()->parentItem());
   if(m_type == Type::Inlet)
@@ -99,30 +101,35 @@ void PortItem::mouseReleaseEvent(QMouseEvent* ev)
 
   if(item && item != this)
   {
-    ISCORE_ASSERT(&item->m_node.process != &this->m_node.process);
+    ISCORE_ASSERT(&item->m_node.node != &this->m_node.node);
     auto cd = createdCable->m_cable.toCableData();
     switch(item->m_type)
     {
       case Type::Inlet:
         cd.inlet = item->m_index;
-        cd.sink = item->m_node.process;
+        cd.sink = item->m_node.node;
         break;
       case Type::Outlet:
         cd.outlet = item->m_index;
-        cd.source = item->m_node.process;
+        cd.source = item->m_node.node;
         break;
       case Type::DependencyInlet:
-        cd.sink = item->m_node.process;
+        cd.sink = item->m_node.node;
         break;
       case Type::DependencyOutlet:
-        cd.source = item->m_node.process;
+        cd.source = item->m_node.node;
         break;
     }
     if(cd.sink.valid() && cd.source.valid())
     {
       ISCORE_ASSERT(cd.sink != cd.source);
-      auto cmd = new CreateCable(m_node.process.system(), Id<Process::Cable>{rand()}, cd);
-      cmd->redo(m_node.process.system().context());
+
+      auto& plug = m_ctx.plugin<Dataflow::DocumentPlugin>();
+      CommandDispatcher<> disp{m_ctx.commandStack};
+      disp.submitCommand<CreateCable>(
+            plug,
+            getStrongId(plug.cables),
+            cd);
     }
   }
 
@@ -178,17 +185,18 @@ void PortItem::setGlow(bool b)
   update();
 }
 
-NodeItem::NodeItem(Dataflow::ProcessComponent& p):
-  process{p}
-, m_depIn{PortItem::DependencyInlet, 0, *this}
-, m_depOut{PortItem::DependencyOutlet, 0, *this}
+NodeItem::NodeItem(const iscore::DocumentContext& ctx, Process::Node& p)
+  : node{p}
+  , m_ctx{ctx}
+  , m_depIn{ctx, PortItem::DependencyInlet, 0, *this}
+  , m_depOut{ctx, PortItem::DependencyOutlet, 0, *this}
 {
   this->setFlag(QQuickItem::ItemHasContents, true);
-  QObject::connect(&process, &Dataflow::ProcessComponent::inletsChanged,
+  QObject::connect(&node, &Process::Node::inletsChanged,
                    this, &NodeItem::recreate);
-  QObject::connect(&process, &Dataflow::ProcessComponent::outletsChanged,
+  QObject::connect(&node, &Process::Node::outletsChanged,
                    this, &NodeItem::recreate);
-  QObject::connect(&process.process().metadata(), &iscore::ModelMetadata::NameChanged,
+  QObject::connect(&node.metadata(), &iscore::ModelMetadata::NameChanged,
                    this, &NodeItem::recreate);
 
   this->setAntialiasing(true);
@@ -203,9 +211,9 @@ NodeItem::~NodeItem()
 
 void NodeItem::recreate()
 {
-  const auto& procName = process.process().metadata().getName();
+  const auto& procName = node.getText();
   std::size_t textwidth = std::max(30, QFontMetrics(QFont()).boundingRect(procName).width() + 24);
-  std::size_t maxport = std::max(process.inlets().size(), process.outlets().size());
+  std::size_t maxport = std::max(node.inlets().size(), node.outlets().size());
   setWidth(std::max(textwidth, 20 * maxport));
   setHeight(30);
 
@@ -215,15 +223,15 @@ void NodeItem::recreate()
   m_outlets.clear();
   m_depIn.setPosition(depInlet());
   m_depOut.setPosition(depOutlet());
-  for(std::size_t i = 0; i < process.inlets().size(); i++)
+  for(std::size_t i = 0; i < node.inlets().size(); i++)
   {
-    auto item = new PortItem{PortItem::Inlet, i, *this};
+    auto item = new PortItem{m_ctx, PortItem::Inlet, i, *this};
     item->setPosition(inletPosition(i));
     m_inlets.push_back(item);
   }
-  for(std::size_t i = 0; i < process.outlets().size(); i++)
+  for(std::size_t i = 0; i < node.outlets().size(); i++)
   {
-    auto item = new PortItem{PortItem::Outlet, i, *this};
+    auto item = new PortItem{m_ctx, PortItem::Outlet, i, *this};
     item->setPosition(outletPosition(i));
     m_outlets.push_back(item);
   }
@@ -236,7 +244,7 @@ void NodeItem::paint(QPainter* painter)
   painter->setBrush(QBrush(QColor::fromHsl(0, 0, 240)));
   auto rect = QRectF{xMv(), yMv(), objectW(), objectH()};
   painter->drawRoundedRect(rect, portSize, portSize);
-  painter->drawText(rect, process.process().metadata().getName(), QTextOption(Qt::AlignCenter));
+  painter->drawText(rect, node.getText(), QTextOption(Qt::AlignCenter));
 }
 
 QPointF NodeItem::depInlet() const
@@ -247,13 +255,13 @@ QPointF NodeItem::depOutlet() const
 
 QPointF NodeItem::inletPosition(int i) const
 {
-  const double spc = objectW() / process.inlets().size();
+  const double spc = objectW() / node.inlets().size();
   return QPointF{portUIRadius + xMv() + i * spc, yMv() - portUIRadius};
 }
 
 QPointF NodeItem::outletPosition(int i) const
 {
-  const double spc = objectW() / process.outlets().size();
+  const double spc = objectW() / node.outlets().size();
   return QPointF{portUIRadius + xMv() + i * spc, yMv() + objectH() - portUIRadius};
 }
 

@@ -12,6 +12,7 @@
 #include <ossia/dataflow/node_process.hpp>
 #include <Pd/PdProcess.hpp>
 #include <QFileInfo>
+#include <Pd/UI/ScenarioNode.hpp>
 namespace Pd
 {
 
@@ -390,7 +391,7 @@ Component::Component(
     if(auto addr = outlet_addresses[i])
       node->outputs()[i]->address = addr;
   }
-  iscore::component<Dataflow::ProcessComponent>(element.components()).exec = node;
+  iscore::component<Dataflow::PdComponent>(element.components()).node().exec = node;
   df.execGraph->add_node(node);
 
   m_ossia_process =

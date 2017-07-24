@@ -54,6 +54,7 @@ class AudioDevice final : public Engine::Network::OSSIADevice
     }
 
   private:
+    using Engine::Network::OSSIADevice::refresh;
     Device::Node refresh() override;
     void disconnect() override;
     ossia::net::device_base& m_dev;

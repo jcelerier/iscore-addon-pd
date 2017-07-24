@@ -27,6 +27,21 @@
 namespace Dataflow
 {
 
+AutomNode::AutomNode(
+    DocumentPlugin& doc,
+    Automation::ProcessModel& proc,
+    Id<Process::Node> c,
+    QObject* parent)
+  : Process::Node{c, parent}
+  , process{proc}
+{
+  connect(&process, &Automation::ProcessModel::addressChanged,
+          this, [=] { this->outletsChanged(); });
+  auto itm = new NodeItem{doc.context(), *this};
+  itm->setParentItem(doc.window.view.contentItem());
+  itm->setPosition(QPointF(100, 100));
+  ui = itm;
+}
 
 AutomationComponent::AutomationComponent(
     Automation::ProcessModel& autom,
@@ -34,19 +49,9 @@ AutomationComponent::AutomationComponent(
     const Id<iscore::Component>& id,
     QObject* parent_obj):
   ProcessComponent_T<Automation::ProcessModel>{autom, doc, id, "AutomationComponent", parent_obj}
+, m_node{doc, autom, Id<Process::Node>{}, this}
 {
-  connect(&autom, &Automation::ProcessModel::addressChanged,
-          this, [=] { this->outletsChanged(); });
-  auto itm = new NodeItem{*this};
-  itm->setParentItem(doc.window.view.contentItem());
-  itm->setPosition(QPointF(100, 100));
-  ui = itm;
 }
-
-
-
-
-
 
 AutomExecComponent::AutomExecComponent(
     Engine::Execution::ConstraintComponent& parentConstraint,
@@ -147,7 +152,7 @@ void AutomExecComponent::recompute()
     });
   }
 
-  iscore::component<Dataflow::ProcessComponent>(process().components()).exec = node;
+  iscore::component<AutomationComponent>(process().components()).node().exec = node;
 }
 
 template <typename Y_T>

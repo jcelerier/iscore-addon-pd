@@ -2,18 +2,41 @@
 #include "NodeItem.hpp"
 #include "View.hpp"
 
-namespace Dataflow
+namespace Process
 {
-
-void ProcessComponent::cleanup()
+void Node::cleanup()
 {
   qDebug("deleting");
-  DocumentPlugin& p = this->system();
+  auto& p = iscore::IDocument::documentContext(*this).plugin<Dataflow::DocumentPlugin>();
   for(const auto& cable : cables())
   {
+    // TODO undo-redo fails with this
     p.cables.remove(cable);
   }
 }
+}
+namespace Dataflow
+{
+
+DataflowProcessNode::DataflowProcessNode(
+    DocumentPlugin& doc,
+    Process::DataflowProcess& proc,
+    Id<Process::Node> c,
+    QObject* parent)
+  : Process::Node{c, parent}
+  , process{proc}
+{
+  connect(&process, &Process::DataflowProcess::inletsChanged,
+          this, &DataflowProcessNode::inletsChanged);
+  connect(&process, &Process::DataflowProcess::outletsChanged,
+          this, &DataflowProcessNode::outletsChanged);
+
+  auto itm = new NodeItem{doc.context(), *this};
+  itm->setParentItem(doc.window.view.contentItem());
+  itm->setPosition(QPointF(50, 50));
+  ui = itm;
+}
+
 ProcessComponent::ProcessComponent(
     Process::ProcessModel& process,
     DocumentPlugin& doc,
@@ -21,7 +44,6 @@ ProcessComponent::ProcessComponent(
     const QString& name,
     QObject* parent):
   Process::GenericProcessComponent<DocumentPlugin>{process, doc, id, name, parent}
-
 {
 
 }
@@ -31,22 +53,14 @@ DataFlowProcessComponent::DataFlowProcessComponent(
     DocumentPlugin& doc,
     const Id<iscore::Component>& id,
     const QString& name,
-    QObject* parent):
-  ProcessComponent_T<Process::DataflowProcess>{process, doc, id, name, parent}
+    QObject* parent)
+: ProcessComponent_T<Process::DataflowProcess>{process, doc, id, name, parent}
+, m_node{doc, process, Id<Process::Node>{}, this}
 {
-  connect(&process, &Process::DataflowProcess::inletsChanged, this, &ProcessComponent::inletsChanged);
-  connect(&process, &Process::DataflowProcess::outletsChanged, this, &ProcessComponent::outletsChanged);
-
-
-  auto itm = new NodeItem{*this};
-  itm->setParentItem(doc.window.view.contentItem());
-  itm->setPosition(QPointF(50, 50));
-  ui = itm;
 }
 
 DataFlowProcessComponent::~DataFlowProcessComponent()
 {
-  cleanup();
 }
 
 ConstraintBase::ConstraintBase(
@@ -82,4 +96,5 @@ PdComponent::PdComponent(
   DataFlowProcessComponent{process, doc, id, "Pd", parent}
 {
 }
+
 }

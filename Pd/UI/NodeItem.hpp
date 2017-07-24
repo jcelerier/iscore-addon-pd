@@ -11,7 +11,7 @@ class PortItem: public QQuickPaintedItem
 {
   public:
     enum Type { Inlet, Outlet, DependencyInlet, DependencyOutlet };
-    PortItem(Type, std::size_t idx, NodeItem& node);
+    PortItem(const iscore::DocumentContext& ctx, Type, std::size_t idx, NodeItem& node);
 
     void paint(QPainter* painter) override;
     void mousePressEvent(QMouseEvent* ev) override;
@@ -31,6 +31,7 @@ class PortItem: public QQuickPaintedItem
     void setGlow(bool);
 
   private:
+    const iscore::DocumentContext& m_ctx;
     NodeItem& m_node;
     Type m_type{};
     std::size_t m_index{};
@@ -41,9 +42,9 @@ struct NodeItem: public QQuickPaintedItem
 {
     Q_OBJECT
   public:
-    Dataflow::ProcessComponent& process;
+    Process::Node& node;
 
-    NodeItem(Dataflow::ProcessComponent& p);
+    NodeItem(const iscore::DocumentContext& ctx, Process::Node& p);
     ~NodeItem();
 
     void recreate();
@@ -80,6 +81,8 @@ struct NodeItem: public QQuickPaintedItem
     void dragMoveEvent(QDragMoveEvent* ev) override;
 
     void mouseDoubleClickEvent(QMouseEvent* ev) override;
+
+    const iscore::DocumentContext& m_ctx;
     PortItem m_depIn;
     PortItem m_depOut;
     std::vector<PortItem*> m_inlets;

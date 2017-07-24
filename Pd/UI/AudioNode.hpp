@@ -32,6 +32,7 @@ public:
     itm->setPosition(QPointF(100, 100));
     ui = itm;
   }
+/*
 
   std::size_t audioInlets() const override { return 0; }
   std::size_t messageInlets() const override { return 0; }
@@ -59,6 +60,7 @@ public:
 private:
   std::vector<Process::Port> m_outlets;
   std::vector<Id<Process::Cable>> m_cables;
+  */
 };
 
 using SoundComponentFactory = ProcessComponentFactory_T<SoundComponent>;

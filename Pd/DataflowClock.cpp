@@ -214,7 +214,7 @@ void Clock::stop_impl(
       }
     }
 
-    for(auto cld : plug.context().document.findChildren<Dataflow::ProcessComponent*>())
+    for(auto cld : plug.context().document.findChildren<Process::Node*>())
     {
       if(cld->exec)
       {
