@@ -55,8 +55,7 @@ AutomExecComponent::AutomExecComponent(
     const ::Engine::Execution::Context& ctx,
     const Id<iscore::Component>& id,
     QObject* parent)
-  : Engine::Execution::
-    ProcessComponent_T<Automation::ProcessModel, ossia::node_process>{
+  : Engine::Execution::ProcessComponent_T<Automation::ProcessModel, ossia::node_process>{
       parentConstraint,
       element,
       ctx,
@@ -84,6 +83,9 @@ AutomExecComponent::AutomExecComponent(
 
 void AutomExecComponent::recompute()
 {
+  // TODO don't do this: this sets prev_date at zero
+  // which is not desirable. Instead just update its data.
+
   // First remove the existing node
   if(this->node)
   {
@@ -100,7 +102,6 @@ void AutomExecComponent::recompute()
   }
 
   // Compute the new node
-
   auto dest = Engine::iscore_to_ossia::makeDestination(
                 system().devices.list(),
                 process().address());

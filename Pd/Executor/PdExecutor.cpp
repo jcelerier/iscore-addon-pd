@@ -253,12 +253,7 @@ void PdGraphNode::run(ossia::execution_state& e)
   for(std::size_t i = 0U; i < m_inputs; i++)
   {
     auto ap = m_inlets[i]->data.target<ossia::audio_port>();
-    const auto pos = i * bs;
-    if(!ap->samples.empty())
-    {
-      auto& arr = ap->samples.back();
-      std::copy_n(arr.begin(), bs, m_inbuf.begin() + pos);
-    }
+    std::copy_n(ap->samples.begin(), bs, m_inbuf.begin() + i * bs);
   }
 
   // Copy midi inputs
@@ -319,9 +314,7 @@ void PdGraphNode::run(ossia::execution_state& e)
   for(std::size_t i = 0U; i < m_outputs; ++i)
   {
     auto ap = m_outlets[i]->data.target<ossia::audio_port>();
-    ap->samples.resize(ap->samples.size() + 1);
-
-    std::copy_n(m_outbuf.begin() + i * bs, bs, ap->samples.back().begin());
+    std::copy_n(m_outbuf.begin() + i * bs, bs, ap->samples.begin());
   }
 
   // Teardown

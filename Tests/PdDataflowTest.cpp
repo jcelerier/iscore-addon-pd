@@ -121,16 +121,10 @@ private slots:
 
       auto pos = samples.size();
       samples.resize(samples.size() + 128);
-      for(auto& arr : audio_l.samples)
-      {
-        for(int i = 0; i < 64; i++)
-          samples[pos + i * 2] += arr[i];
-      }
-      for(auto& arr : audio_r.samples)
-      {
-        for(int i = 0; i < 64; i++)
-          samples[pos + i * 2 + 1] += arr[i];
-      }
+      for(int i = 0; i < 64; i++)
+        samples[pos + i * 2] += audio_l.samples[i];
+      for(int i = 0; i < 64; i++)
+        samples[pos + i * 2 + 1] += audio_r.samples[i];
     };
 
     // Create an ossia scenario
