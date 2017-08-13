@@ -53,8 +53,10 @@ public:
   PdGraphNode(
       ossia::string_view folder,
       ossia::string_view file,
-      std::size_t inputs,
-      std::size_t outputs,
+      std::size_t audio_inputs,
+      std::size_t audio_outputs,
+      std::size_t message_inputs,
+      std::size_t message_outputs,
       std::vector<std::string> in_val,
       std::vector<std::string> out_val,
       bool midi_in = true,
@@ -94,7 +96,8 @@ private:
   t_pdinstance * m_instance{};
   int m_dollarzero = 0;
 
-  std::size_t m_inputs{}, m_outputs{};
+  std::size_t m_audioIns{}, m_audioOuts{};
+  std::size_t m_messageIns{}, m_messageOuts{};
   std::vector<std::string> m_inmess, m_outmess;
   std::vector<float> m_inbuf, m_outbuf;
   ossia::midi_port* m_midi_inlet{};

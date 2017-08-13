@@ -152,7 +152,7 @@ void AutomExecComponent::recompute()
     });
   }
 
-  iscore::component<AutomationComponent>(process().components()).node().exec = node;
+  iscore::component<AutomationComponent>(process().components()).mainNode().exec = node;
 }
 
 template <typename Y_T>

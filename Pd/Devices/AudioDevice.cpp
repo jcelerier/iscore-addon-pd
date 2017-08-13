@@ -183,16 +183,23 @@ int audio_protocol::PortAudioCallback(
 
   // Prepare audio inputs
   const int n_in_channels = self.audio_ins.size();
+  self.main_audio_in->audio.resize(n_in_channels);
   for(int i = 0; i < n_in_channels; i++)
   {
-    self.audio_ins[i]->audio = {float_input[i], fc};
+    self.main_audio_in->audio[i] = {float_input[i], fc};
+
+    self.audio_ins[i]->audio.resize(1);
+    self.audio_ins[i]->audio[0] = {float_input[i], fc};
   }
 
   // Prepare audio outputs
   const int n_out_channels = self.audio_outs.size();
+  self.main_audio_out->audio.resize(n_out_channels);
   for(int i = 0; i < n_out_channels; i++)
   {
-    self.audio_outs[i]->audio = {float_output[i], fc};
+    self.main_audio_out->audio[i] = {float_input[i], fc};
+    self.audio_outs[i]->audio.resize(1);
+    self.audio_outs[i]->audio[0] = {float_output[i], fc};
 
     for(int j = 0; j < (int)frameCount; j++)
     {

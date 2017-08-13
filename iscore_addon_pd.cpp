@@ -12,6 +12,8 @@
 #include <Scenario/iscore_plugin_scenario.hpp>
 #include <Pd/UI/ScenarioNode.hpp>
 #include <Pd/UI/AutomationNode.hpp>
+#include <Pd/UI/PdNode.hpp>
+#include <Pd/UI/SoundNode.hpp>
 #include <iscore_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -39,10 +41,6 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
     return instantiate_factories<
             iscore::ApplicationContext,
          FW<Process::ProcessModelFactory, Pd::ProcessFactory>
-        , FW<Engine::Execution::ProcessComponentFactory
-            , Pd::ComponentFactory
-            , Dataflow::AutomExecComponentFactory
-        >
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
         , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
@@ -51,6 +49,12 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
             , Dataflow::PdComponentFactory
             , Dataflow::ScenarioComponentFactory
             , Dataflow::AutomationComponentFactory
+            , Dataflow::SoundComponentFactory
+        >
+        , FW<Engine::Execution::ProcessComponentFactory
+            , Pd::ComponentFactory
+            , Dataflow::AutomExecComponentFactory
+            , Dataflow::SoundExecComponentFactory
         >
     >(ctx, key);
 }

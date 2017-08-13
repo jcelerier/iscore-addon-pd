@@ -48,13 +48,14 @@ private slots:
     auto cwd = getcwd(NULL, 0);
 
     using namespace Pd;
-    auto f1 = std::make_shared<PdGraphNode>(cwd, "gen1.pd", 0, 0, string_vec{}, string_vec{"out-1"});
-    auto f1_2 = std::make_shared<PdGraphNode>(cwd, "gen1.pd", 0, 0, string_vec{}, string_vec{"out-1"});
-    auto f2 = std::make_shared<PdGraphNode>(cwd, "gen2.pd", 0, 0, string_vec{"in-1"}, string_vec{"out-1"});
-    auto f3 = std::make_shared<PdGraphNode>(cwd, "gen3.pd", 0, 2, string_vec{"in-1", "in-2"}, string_vec{});
-    auto f4 = std::make_shared<PdGraphNode>(cwd, "gen4.pd", 2, 2, string_vec{"in-2"}, string_vec{});
-    auto f5 = std::make_shared<PdGraphNode>(cwd, "gen5.pd", 2, 2, string_vec{"in-2"}, string_vec{});
-    auto f5_2 = std::make_shared<PdGraphNode>(cwd, "gen5.pd", 2, 2, string_vec{"in-2"}, string_vec{});
+
+    auto f1 = std::make_shared<PdGraphNode>(cwd, "gen1.pd", 0, 0, 0, 1, string_vec{}, string_vec{"out-1"});
+    auto f1_2 = std::make_shared<PdGraphNode>(cwd, "gen1.pd", 0, 0, 0, 1, string_vec{}, string_vec{"out-1"});
+    auto f2 = std::make_shared<PdGraphNode>(cwd, "gen2.pd", 0, 0, 1, 1, string_vec{"in-1"}, string_vec{"out-1"});
+    auto f3 = std::make_shared<PdGraphNode>(cwd, "gen3.pd", 0, 2, 2, 0, string_vec{"in-1", "in-2"}, string_vec{});
+    auto f4 = std::make_shared<PdGraphNode>(cwd, "gen4.pd", 2, 2, 1, 0, string_vec{"in-2"}, string_vec{});
+    auto f5 = std::make_shared<PdGraphNode>(cwd, "gen5.pd", 2, 2, 1, 0, string_vec{"in-2"}, string_vec{});
+    auto f5_2 = std::make_shared<PdGraphNode>(cwd, "gen5.pd", 2, 2, 1, 0, string_vec{"in-2"}, string_vec{});
 
     g.add_node(f1);
     g.add_node(f1_2);
@@ -121,10 +122,12 @@ private slots:
 
       auto pos = samples.size();
       samples.resize(samples.size() + 128);
+      /* TODO reinstate me with channels
       for(int i = 0; i < 64; i++)
         samples[pos + i * 2] += audio_l.samples[i];
       for(int i = 0; i < 64; i++)
         samples[pos + i * 2 + 1] += audio_r.samples[i];
+        */
     };
 
     // Create an ossia scenario

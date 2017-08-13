@@ -37,9 +37,12 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/AudioDevice.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/MidiDevice.hpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/AudioNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/SoundNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/ConstraintNode.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/AutomationNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/DataflowProcessNode.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/LoopNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/Slider.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/MidiNode.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/NodeItem.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.hpp"
@@ -69,8 +72,11 @@ set(SRCS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/AudioDevice.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Devices/MidiDevice.cpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/AudioNode.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/SoundNode.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/ConstraintNode.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/AutomationNode.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/DataflowProcessNode.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/Slider.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/LoopNode.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/MidiNode.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/NodeItem.cpp"
@@ -89,7 +95,7 @@ iscore_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} PUBLIC -L/usr/local/lib )
 endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC iscore_plugin_engine iscore_plugin_audio ${LIBPD_LIBRARY} nodes portaudio dl)
+target_link_libraries(${PROJECT_NAME} PUBLIC iscore_plugin_engine iscore_plugin_audio ${LIBPD_LIBRARY} portaudio dl)
 target_include_directories(${PROJECT_NAME} PUBLIC
   3rdparty/libpd/libpd_wrapper
   3rdparty/libpd/pure-data/src

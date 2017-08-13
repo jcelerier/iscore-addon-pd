@@ -37,6 +37,7 @@ class AutomNode : public Process::Node
       Process::Port& p = v[0];
       p.address = process.address();
       p.type = Process::PortType::Message;
+      p.propagate = true;
       return v;
     }
 
@@ -55,9 +56,7 @@ class AutomNode : public Process::Node
     ossia::node_ptr exec;
   private:
     std::vector<Id<Process::Cable>> m_cables;
-
 };
-
 
 class AutomationComponent :
     public ProcessComponent_T<Automation::ProcessModel>
@@ -70,7 +69,7 @@ class AutomationComponent :
         const Id<iscore::Component>& id,
         QObject* parent_obj);
 
-    AutomNode& node() { return m_node; }
+    AutomNode& mainNode() override { return m_node; }
   private:
     AutomNode m_node;
 };

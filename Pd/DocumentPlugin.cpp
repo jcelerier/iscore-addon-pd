@@ -8,6 +8,7 @@
 #include <iscore/tools/IdentifierGeneration.hpp>
 #include <Pd/UI/ScenarioNode.hpp>
 #include <Pd/UI/NodeItem.hpp>
+#include <Pd/UI/ConstraintNode.hpp>
 
 #include <Scenario/Document/ScenarioDocument/ScenarioDocumentModel.hpp>
 #include <iscore/document/DocumentInterface.hpp>
@@ -31,11 +32,11 @@ DocumentPlugin::DocumentPlugin(
 
 void DocumentPlugin::init()
 {
-  auto& md = iscore::IDocument::modelDelegate<Scenario::ScenarioDocumentModel>(context().document);
-  m_constraint = new Dataflow::Constraint(Id<iscore::Component>{}, md.baseConstraint(), *this, this);
-
   midi_ins.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/in"));
   midi_outs.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/out"));
+
+  auto& md = iscore::IDocument::modelDelegate<Scenario::ScenarioDocumentModel>(context().document);
+  m_constraint = new Dataflow::Constraint(Id<iscore::Component>{}, md.baseConstraint(), *this, this);
 
   execGraph = std::make_shared<ossia::graph>();
   audioproto->reload();
@@ -75,6 +76,7 @@ void DocumentPlugin::on_cableAdded(Process::Cable& c)
 
   auto ci = new Dataflow::CableItem{c, source, sink};
   ci->setParentItem(window.view.contentItem());
+  ci->update();
   cableItems.insert(ci);
 }
 

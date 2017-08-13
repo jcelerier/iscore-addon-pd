@@ -433,13 +433,12 @@ void CableItem::updateRect()
               mapFromItem(parentItem(), rect.topLeft()) + QPointF{grow, grow},
               mapFromItem(parentItem(), rect.bottomRight()) + QPointF{grow, grow}};
   this->setPosition(norm.topLeft() - QPointF{grow, grow});
-  this->setWidth(norm.width() + 2 * grow);
-  this->setHeight(norm.height() + 2 * grow);
+  this->setWidth(norm.width() + 3 * grow);
+  this->setHeight(norm.height() + 3 * grow);
 }
 
 void CableItem::paint(QPainter* painter)
 {
-  painter->setPen(Qt::red); painter->drawRect(boundingRect());
   painter->setPen(QPen(Qt::darkGray, 2));
   QPainterPath p;
   p.moveTo(m_line.x1(), m_line.y1());

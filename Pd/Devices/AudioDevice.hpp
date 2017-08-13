@@ -146,7 +146,7 @@ class audio_protocol : public ossia::net::protocol_base
       m_dev = &dev;
     }
 
-    void stop()
+    void stop() override
     {
       if(m_stream)
       {
@@ -168,6 +168,8 @@ class audio_protocol : public ossia::net::protocol_base
       audio_outs.clear();
       m_dev->get_root_node().clear_children();
 
+      main_audio_in = create_address<ossia::audio_address>(m_dev->get_root_node(), "/in/main");
+      main_audio_out = create_address<ossia::audio_address>(m_dev->get_root_node(), "/out/main");
       for(int i = 0; i < inputs; i++)
       {
         audio_ins.push_back(create_address<ossia::audio_address>(m_dev->get_root_node(), "/in/" + std::to_string(i)));
@@ -212,6 +214,8 @@ class audio_protocol : public ossia::net::protocol_base
     ossia::net::device_base* m_dev{};
     PaStream* m_stream{};
 
+    ossia::audio_address* main_audio_in{};
+    ossia::audio_address* main_audio_out{};
     std::vector<ossia::audio_address*> audio_ins;
     std::vector<ossia::audio_address*> audio_outs;
 };
