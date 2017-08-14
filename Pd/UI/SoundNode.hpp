@@ -41,7 +41,6 @@ public:
   void addCable(Id<Process::Cable> c) override;
   void removeCable(Id<Process::Cable> c) override;
 
-  ossia::node_ptr exec;
 private:
   std::vector<Id<Process::Cable>> m_cables;
 

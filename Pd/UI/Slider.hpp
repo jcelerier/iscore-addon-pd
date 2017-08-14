@@ -2,8 +2,36 @@
 #include <Process/Dataflow/DataflowObjects.hpp>
 #include <QQuickPaintedItem>
 #include <QPainter>
+#include <ossia/dataflow/graph_node.hpp>
+#include <ossia/dataflow/audio_address.hpp>
 namespace Dataflow
 {
+class volume_node final : public ossia::graph_node
+{
+public:
+  double volume{1.};
+  volume_node()
+  {
+    m_inlets.push_back(ossia::make_inlet<ossia::audio_port>());
+    m_outlets.push_back(ossia::make_outlet<ossia::audio_port>());
+  }
+
+  void run(ossia::execution_state&) override
+  {
+    auto in = m_inlets[0]->data.target<ossia::audio_port>();
+    auto out = m_outlets[0]->data.target<ossia::audio_port>();
+    out->samples.resize(in->samples.size());
+    for(std::size_t i = 0; i < in->samples.size(); i++)
+    {
+      auto& in_chan = in->samples[i];
+      auto& out_chan = out->samples[i];
+      for(std::size_t j = 0; j < in_chan.size(); j++)
+      {
+        out_chan[j] = in_chan[j] * volume;
+      }
+    }
+  }
+};
 
 class SliderUI final : public QQuickPaintedItem
 {
@@ -11,6 +39,7 @@ class SliderUI final : public QQuickPaintedItem
 public:
     SliderUI();
 
+    void setValue(double v) { m_value = v; update(); }
 signals:
     void valueChanged(double);
 
@@ -33,11 +62,12 @@ public:
     Slider(const DocumentPlugin& doc, Id<Node> c, QObject* parent);
 
     void setVolume(double v);
+    void preparePlay();
 
 signals:
     void volumeChanged(double);
-private:
 
+private:
     QString getText() const override;
     std::size_t audioInlets() const override;
     std::size_t messageInlets() const override;
@@ -53,6 +83,7 @@ private:
 
     double m_volume{};
     std::vector<Id<Process::Cable>> m_cables;
+    SliderUI* m_ui{};
 };
 
 }

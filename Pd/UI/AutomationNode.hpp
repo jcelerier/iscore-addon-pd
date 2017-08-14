@@ -53,7 +53,6 @@ class AutomNode : public Process::Node
     void removeCable(Id<Process::Cable> c) override
     { m_cables.erase(ossia::find(m_cables, c)); }
 
-    ossia::node_ptr exec;
   private:
     std::vector<Id<Process::Cable>> m_cables;
 };

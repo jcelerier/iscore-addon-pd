@@ -191,4 +191,15 @@ bool ConstraintBase::removing(
   return true;
 }
 
+void ConstraintBase::preparePlay()
+{
+  m_node.exec = std::make_shared<constraint_node>();
+  for(auto& proc : m_processes)
+  {
+    proc.second.component->preparePlay();
+    if(proc.second.mix)
+      proc.second.mix->preparePlay();
+  }
+}
+
 }

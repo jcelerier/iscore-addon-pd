@@ -18,7 +18,6 @@ class DataflowProcessNode
           QObject* parent);
 
     Process::DataflowProcess& process;
-    ossia::node_ptr exec;
 
     ~DataflowProcessNode()
     {

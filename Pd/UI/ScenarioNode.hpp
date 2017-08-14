@@ -77,6 +77,7 @@ public:
     void removed(Args&&...) { }
 
     ScenarioNode& mainNode() override { return m_node; }
+    void preparePlay() override;
 
 private:
     std::unordered_map<const Scenario::ConstraintModel*, ConstraintData> m_constraints;

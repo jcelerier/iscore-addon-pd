@@ -1,5 +1,6 @@
 #include "Slider.hpp"
 #include <Pd/UI/NodeItem.hpp>
+#include <Pd/DocumentPlugin.hpp>
 
 namespace Dataflow
 {
@@ -12,12 +13,12 @@ SliderUI::SliderUI()
 void SliderUI::paint(QPainter *painter)
 {
     auto rect = this->boundingRect();
-    painter->setBrush(Qt::darkBlue);
-    painter->setPen(Qt::blue);
+    painter->setBrush(QColor(50, 50, 50));
+    painter->setPen(QColor(90, 80, 80));
     painter->drawRect(rect);
     rect.setSize({rect.width() * m_value, rect.height()});
-    painter->setBrush(Qt::darkCyan);
-    painter->setPen(Qt::cyan);
+    painter->setBrush(QColor(150, 150, 150));
+    painter->setPen(QColor(190, 180, 180));
     painter->drawRect(rect);
 }
 
@@ -63,20 +64,29 @@ Slider::Slider(const DocumentPlugin& doc, Id<Process::Node> c, QObject *parent)
     item->setPosition(QPointF(100, 100));
     ui = item;
 
-    auto sld = new SliderUI{};
-    sld->setParentItem(item);
-    sld->setX(6);
-    sld->setY(6);
-    sld->setWidth(item->width() - 12);
-    sld->setHeight(item->height() - 12);
-    connect(sld, &SliderUI::valueChanged,
-            this, [=] (double v) { setVolume(v); });
+    m_ui = new SliderUI{};
+    m_ui->setParentItem(item);
+    m_ui->setX(6);
+    m_ui->setY(6);
+    m_ui->setWidth(item->width() - 12);
+    m_ui->setHeight(item->height() - 12);
+    connect(m_ui, &SliderUI::valueChanged,
+            this, [=] (double v) {
+      m_volume = v;
+      emit volumeChanged(v);
+    });
 }
 
 void Slider::setVolume(double v)
 {
     m_volume = v;
+    m_ui->setValue(v);
     emit volumeChanged(v);
+}
+
+void Slider::preparePlay()
+{
+  exec = std::make_shared<volume_node>();
 }
 
 QString Slider::getText() const

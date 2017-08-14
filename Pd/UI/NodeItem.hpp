@@ -1,8 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QQuickPaintedItem>
-#include <Process/Dataflow/DataflowProcess.hpp>
-#include <Pd/UI/ScenarioNode.hpp>
+#include <Process/Dataflow/DataflowObjects.hpp>
 #include <QPainter>
 
 namespace Dataflow

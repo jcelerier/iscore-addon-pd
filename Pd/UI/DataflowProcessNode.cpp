@@ -5,7 +5,6 @@ namespace Process
 {
 void Node::cleanup()
 {
-  qDebug("deleting");
   auto& p = iscore::IDocument::documentContext(*this).plugin<Dataflow::DocumentPlugin>();
   for(const auto& cable : cables())
   {

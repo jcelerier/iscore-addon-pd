@@ -6,6 +6,7 @@
 #include <Engine/Executor/Settings/ExecutorModel.hpp>
 #include <Engine/Executor/BaseScenarioComponent.hpp>
 #include <Engine/Executor/ConstraintComponent.hpp>
+#include <Pd/UI/ConstraintNode.hpp>
 #include <Pd/DocumentPlugin.hpp>
 #include <Pd/Executor/PdExecutor.hpp>
 #include <boost/graph/graphviz.hpp>
@@ -129,7 +130,9 @@ void Clock::play_impl(
     Engine::Execution::BaseScenarioElement& bs)
 {
   m_paused = false;
+  m_plug.m_constraint->preparePlay();
 
+  qDebug() << m_plug.context().document.findChildren<Process::Node*>();
   for(auto& cable : m_plug.cables)
   {
     connectCable(cable);

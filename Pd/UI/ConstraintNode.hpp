@@ -2,9 +2,48 @@
 #include <Process/Dataflow/DataflowObjects.hpp>
 #include <Scenario/Document/Components/ConstraintComponent.hpp>
 #include <iscore_addon_pd_export.h>
+#include <ossia/dataflow/graph_node.hpp>
 namespace Dataflow
 {
 class Slider;
+class constraint_node : public ossia::graph_node
+{
+public:
+  constraint_node()
+  {
+    // todo maybe we can optimize by having m_outlets == m_inlets
+    // this way no copy.
+    m_inlets.push_back(ossia::make_inlet<ossia::audio_port>());
+    m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
+    m_inlets.push_back(ossia::make_inlet<ossia::midi_port>());
+
+    m_outlets.push_back(ossia::make_outlet<ossia::audio_port>());
+    m_outlets.push_back(ossia::make_outlet<ossia::value_port>());
+    m_outlets.push_back(ossia::make_outlet<ossia::midi_port>());
+  }
+
+  void run(ossia::execution_state&) override
+  {
+    {
+      auto i = m_inlets[0]->data.target<ossia::audio_port>();
+      auto o = m_outlets[0]->data.target<ossia::audio_port>();
+      o->samples = i->samples;
+    }
+
+    {
+      auto i = m_inlets[1]->data.target<ossia::value_port>();
+      auto o = m_outlets[1]->data.target<ossia::value_port>();
+      o->data = i->data;
+    }
+
+    {
+      auto i = m_inlets[1]->data.target<ossia::midi_port>();
+      auto o = m_outlets[1]->data.target<ossia::midi_port>();
+      o->messages = i->messages;
+    }
+  }
+};
+
 class ConstraintNode : public Process::Node
 {
 public:
@@ -63,6 +102,7 @@ public:
     }
 
     ConstraintNode& mainNode() { return m_node; }
+    void preparePlay();
 
 private:
     void setupProcess(Process::ProcessModel &c, ProcessComponent *comp);

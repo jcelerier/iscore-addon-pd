@@ -81,6 +81,17 @@ void ScenarioBase::teardownConstraint(
     }
 }
 
+void ScenarioBase::preparePlay()
+{
+  m_node.exec = std::make_shared<constraint_node>();
+  for(auto& cst : m_constraints)
+  {
+    cst.second.component->preparePlay();
+    if(cst.second.mix)
+      cst.second.mix->preparePlay();
+  }
+}
+
 ScenarioNode::ScenarioNode(
         const DocumentPlugin& doc,
         Id<Process::Node> c,
