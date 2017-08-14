@@ -22,7 +22,7 @@ DocumentPlugin::DocumentPlugin(
         QObject* parent):
     iscore::DocumentPlugin{ctx, std::move(id), "PdDocPlugin", parent},
     m_dispatcher{ctx.commandStack},
-    audioproto{new Pd::audio_protocol},
+    audioproto{new ossia::audio_protocol},
     audio_dev{std::unique_ptr<ossia::net::protocol_base>(audioproto), "audio"},
     midi_dev{std::make_unique<ossia::net::multiplex_protocol>(), "midi"}
 {
@@ -32,8 +32,8 @@ DocumentPlugin::DocumentPlugin(
 
 void DocumentPlugin::init()
 {
-  midi_ins.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/in"));
-  midi_outs.push_back(create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/out"));
+  midi_ins.push_back(ossia::net::create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/in"));
+  midi_outs.push_back(ossia::net::create_address<ossia::midi_generic_address>(midi_dev.get_root_node(), "/0/out"));
 
   auto& md = iscore::IDocument::modelDelegate<Scenario::ScenarioDocumentModel>(context().document);
   m_constraint = new Dataflow::Constraint(Id<iscore::Component>{}, md.baseConstraint(), *this, this);
@@ -76,6 +76,7 @@ void DocumentPlugin::on_cableAdded(Process::Cable& c)
 
   auto ci = new Dataflow::CableItem{c, source, sink};
   ci->setParentItem(window.view.contentItem());
+  ci->updateRect();
   ci->update();
   cableItems.insert(ci);
 }

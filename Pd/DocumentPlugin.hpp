@@ -32,8 +32,8 @@ public:
 
   virtual ~DocumentPlugin();
 
-  Pd::audio_protocol& audioProto() { return *audioproto; }
-  ossia::net::address_base* resolve(const State::AddressAccessor& ) const;
+  ossia::audio_protocol& audioProto() { return *audioproto; }
+  ossia::net::address_base* resolve(const State::AddressAccessor&) const;
 
   void on_cableAdded(Process::Cable& c);
   void on_cableRemoving(const Process::Cable& c);
@@ -47,7 +47,7 @@ public:
 
   iscore::QuietOngoingCommandDispatcher m_dispatcher;
 
-  Pd::audio_protocol* audioproto{};
+  ossia::audio_protocol* audioproto{};
   mutable ossia::net::generic_device audio_dev;
   mutable ossia::net::generic_device midi_dev;
 

@@ -6,9 +6,9 @@
 
 namespace Dataflow
 {
-const constexpr double portRadius = 3;
-const constexpr double portUIRadius = portRadius + 1;
-const constexpr double portSize = 4;
+const constexpr double portRadius = 3.;
+const constexpr double portUIRadius = portRadius + 1.;
+const constexpr double portSize = 4.;
 PortItem* hoveredPort{};
 CableItem* createdCable{};
 PortItem::PortItem(const iscore::DocumentContext& ctx, Type t, std::size_t idx,  NodeItem& node)
@@ -255,13 +255,13 @@ QPointF NodeItem::depOutlet() const
 
 QPointF NodeItem::inletPosition(int i) const
 {
-  const double spc = objectW() / node.inlets().size();
+  const double spc = objectW() / double(node.inlets().size());
   return QPointF{portUIRadius + xMv() + i * spc, yMv() - portUIRadius};
 }
 
 QPointF NodeItem::outletPosition(int i) const
 {
-  const double spc = objectW() / node.outlets().size();
+  const double spc = objectW() / double(node.outlets().size());
   return QPointF{portUIRadius + xMv() + i * spc, yMv() + objectH() - portUIRadius};
 }
 
@@ -364,13 +364,17 @@ void CableItem::recreate()
   if(source)
   {
     cons.push_back(connect(source, &NodeItem::xChanged, this, [=] { updateRect(); update(); }));
-    cons.push_back(connect(source, &NodeItem::yChanged, this, [=] { updateRect();update(); }));
+    cons.push_back(connect(source, &NodeItem::yChanged, this, [=] { updateRect(); update(); }));
+    cons.push_back(connect(source, &NodeItem::widthChanged, this, [=] { updateRect(); update(); }));
+    cons.push_back(connect(source, &NodeItem::heightChanged, this, [=] { updateRect(); update(); }));
     cons.push_back(connect(source, &NodeItem::aboutToDelete, this, [=] { source = nullptr; recreate(); }));
   }
   if(sink)
   {
     cons.push_back(connect(sink, &NodeItem::xChanged, this, [=] { updateRect(); update(); }));
     cons.push_back(connect(sink, &NodeItem::yChanged, this, [=] { updateRect(); update(); }));
+    cons.push_back(connect(sink, &NodeItem::widthChanged, this, [=] { updateRect(); update(); }));
+    cons.push_back(connect(sink, &NodeItem::heightChanged, this, [=] { updateRect(); update(); }));
     cons.push_back(connect(sink, &NodeItem::aboutToDelete, this, [=] { sink = nullptr; recreate(); }));
   }
 
@@ -427,19 +431,25 @@ void CableItem::updateRect()
     }
   }
 
-  const double grow = 3;
+  const double grow = 4.;
   auto norm = rect.normalized();
-  m_line = QLineF{
-              mapFromItem(parentItem(), rect.topLeft()) + QPointF{grow, grow},
-              mapFromItem(parentItem(), rect.bottomRight()) + QPointF{grow, grow}};
-  this->setPosition(norm.topLeft() - QPointF{grow, grow});
-  this->setWidth(norm.width() + 3 * grow);
-  this->setHeight(norm.height() + 3 * grow);
+  auto line = QLineF{
+              mapFromItem(parentItem(), rect.topLeft() + QPointF{grow, grow}),
+              mapFromItem(parentItem(), rect.bottomRight() + QPointF{grow, grow})};
+  if(line != m_line)
+  {
+    m_line = line;
+    this->setPosition(norm.topLeft() - QPointF{grow, grow});
+    this->setWidth(norm.width() + 3. * grow);
+    this->setHeight(norm.height() + 3. * grow);
+  }
 }
 
 void CableItem::paint(QPainter* painter)
 {
-  painter->setPen(QPen(Qt::darkGray, 2));
+  painter->setPen(QPen(Qt::darkGray, 2.));
+  painter->drawLine(m_line);
+  /*
   QPainterPath p;
   p.moveTo(m_line.x1(), m_line.y1());
 
@@ -448,6 +458,7 @@ void CableItem::paint(QPainter* painter)
   else
     p.cubicTo(m_line.x1(), m_line.y2(), m_line.x2(), m_line.y1(), m_line.x2(), m_line.y2());
   painter->drawPath(p);
+  */
 }
 
 void CableItem::press(QPointF pos)

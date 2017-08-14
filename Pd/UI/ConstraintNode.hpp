@@ -27,19 +27,19 @@ public:
     {
       auto i = m_inlets[0]->data.target<ossia::audio_port>();
       auto o = m_outlets[0]->data.target<ossia::audio_port>();
-      o->samples = i->samples;
+      o->samples = std::move(i->samples);
     }
 
     {
       auto i = m_inlets[1]->data.target<ossia::value_port>();
       auto o = m_outlets[1]->data.target<ossia::value_port>();
-      o->data = i->data;
+      o->data = std::move(i->data);
     }
 
     {
       auto i = m_inlets[1]->data.target<ossia::midi_port>();
       auto o = m_outlets[1]->data.target<ossia::midi_port>();
-      o->messages = i->messages;
+      o->messages = std::move(i->messages);
     }
   }
 };

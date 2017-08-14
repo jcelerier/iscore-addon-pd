@@ -41,7 +41,7 @@ bool AudioDevice::reconnect()
     AudioSpecificSettings stgs
         = settings().deviceSpecificSettings.value<AudioSpecificSettings>();
 
-    auto& proto = static_cast<audio_protocol&>(m_dev.get_protocol());
+    auto& proto = static_cast<ossia::audio_protocol&>(m_dev.get_protocol());
     proto.rate = stgs.rate;
     proto.bufferSize = stgs.bufferSize;
     proto.reload();
@@ -164,62 +164,6 @@ void AudioSettingsWidget::setSettings(
     audio = settings.deviceSpecificSettings
             .value<AudioSpecificSettings>();
   }
-}
-
-int audio_protocol::PortAudioCallback(
-    const void* input,
-    void* output,
-    unsigned long frameCount,
-    const PaStreamCallbackTimeInfo* timeInfo,
-    PaStreamCallbackFlags statusFlags,
-    void* userData)
-{
-  using idx_t = gsl::span<float>::index_type;
-  const idx_t fc = frameCount;
-  auto& self = *static_cast<audio_protocol*>(userData);
-
-  auto float_input = ((float **) input);
-  auto float_output = ((float **) output);
-
-  // Prepare audio inputs
-  const int n_in_channels = self.audio_ins.size();
-  self.main_audio_in->audio.resize(n_in_channels);
-  for(int i = 0; i < n_in_channels; i++)
-  {
-    self.main_audio_in->audio[i] = {float_input[i], fc};
-
-    self.audio_ins[i]->audio.resize(1);
-    self.audio_ins[i]->audio[0] = {float_input[i], fc};
-  }
-
-  // Prepare audio outputs
-  const int n_out_channels = self.audio_outs.size();
-  self.main_audio_out->audio.resize(n_out_channels);
-  for(int i = 0; i < n_out_channels; i++)
-  {
-    self.main_audio_out->audio[i] = {float_input[i], fc};
-    self.audio_outs[i]->audio.resize(1);
-    self.audio_outs[i]->audio[0] = {float_output[i], fc};
-
-    for(int j = 0; j < (int)frameCount; j++)
-    {
-      float_output[i][j] = 0;
-    }
-  }
-
-  // Run a tick
-  if(self.replace_tick)
-  {
-    self.audio_tick = std::move(self.ui_tick);
-    self.ui_tick = {};
-    self.replace_tick = false;
-  }
-
-  if(self.audio_tick)
-  {
-    self.audio_tick(frameCount);
-  }
-  return paContinue;
 }
 
 }
