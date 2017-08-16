@@ -1,12 +1,14 @@
 #pragma once
 #include <Pd/PdProcess.hpp>
 #include <Pd/Commands/EditPd.hpp>
-#include <Pd/Inspector/DataflowWidget.hpp>
+#include <Dataflow/Inspector/DataflowWidget.hpp>
 #include <Process/Inspector/ProcessInspectorWidgetDelegate.hpp>
 #include <Process/Inspector/ProcessInspectorWidgetDelegateFactory.hpp>
 #include <iscore/command/Dispatchers/CommandDispatcher.hpp>
 #include <QVBoxLayout>
 #include <QLineEdit>
+#include <iscore/widgets/MarginLess.hpp>
+#include <Dataflow/Inspector/DataflowWidget.hpp>
 namespace Pd
 {
 

@@ -11,7 +11,7 @@ ProcessModel::ProcessModel(
         const TimeVal& duration,
         const Id<Process::ProcessModel>& id,
         QObject* parent):
-    Dataflow::ProcessModel{duration, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent}
+    Process::DataflowProcess{duration, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent}
 {
     metadata().setInstanceName(*this);
 }
@@ -20,7 +20,7 @@ ProcessModel::ProcessModel(
         const ProcessModel& source,
         const Id<Process::ProcessModel>& id,
         QObject* parent):
-    Dataflow::ProcessModel{source, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent},
+    Process::DataflowProcess{source, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent},
     m_script{source.m_script}
 {
     metadata().setInstanceName(*this);

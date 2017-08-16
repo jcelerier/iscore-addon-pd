@@ -3,17 +3,12 @@
 #include <Pd/PdLayer.hpp>
 #include <Pd/Executor/PdExecutor.hpp>
 #include <Pd/Commands/PdCommandFactory.hpp>
-#include <Pd/Inspector/PdInspectorFactory.hpp>
-#include <Pd/ApplicationPlugin.hpp>
-#include <Pd/DataflowClock.hpp>
+#include <Dataflow/ApplicationPlugin.hpp>
 #include <iscore/plugins/customfactory/FactorySetup.hpp>
 #include <iscore_addon_pd_commands_files.hpp>
-#include <Pd/Devices/AudioDevice.hpp>
+
 #include <Scenario/iscore_plugin_scenario.hpp>
-#include <Pd/UI/ScenarioNode.hpp>
-#include <Pd/UI/AutomationNode.hpp>
 #include <Pd/UI/PdNode.hpp>
-#include <Pd/UI/SoundNode.hpp>
 #include <iscore_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -42,20 +37,7 @@ std::vector<std::unique_ptr<iscore::InterfaceBase>> iscore_addon_pd::factories(
             iscore::ApplicationContext,
          FW<Process::ProcessModelFactory, Pd::ProcessFactory>
         , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
-        , FW<Engine::Execution::ClockManagerFactory, Dataflow::ClockFactory>
         , FW<Process::LayerFactory, Pd::LayerFactory>
-        , FW<Device::ProtocolFactory, Pd::AudioProtocolFactory>
-        , FW<Dataflow::ProcessComponentFactory
-            , Dataflow::PdComponentFactory
-            , Dataflow::ScenarioComponentFactory
-            , Dataflow::AutomationComponentFactory
-            , Dataflow::SoundComponentFactory
-        >
-        , FW<Engine::Execution::ProcessComponentFactory
-            , Pd::ComponentFactory
-            , Dataflow::AutomExecComponentFactory
-            , Dataflow::SoundExecComponentFactory
-        >
     >(ctx, key);
 }
 
@@ -69,12 +51,6 @@ iscore_addon_pd::iscore_addon_pd()
     libpd_set_floathook([] (const char *s, float x)  { qDebug() << "float: " << s << x; });
 }
 
-iscore::GUIApplicationPlugin*
-iscore_addon_pd::make_guiApplicationPlugin(
-        const iscore::GUIApplicationContext& app)
-{
-    return new Dataflow::ApplicationPlugin{app};
-}
 
 auto iscore_addon_pd::required() const
   -> std::vector<iscore::PluginKey>

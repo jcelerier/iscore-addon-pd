@@ -1,6 +1,6 @@
 #pragma once
 #include <Pd/PdMetadata.hpp>
-#include <Pd/DataflowProcess.hpp>
+#include <Dataflow/UI/DataflowProcessNode.hpp>
 #include <Process/Process.hpp>
 #include <Process/WidgetLayer/WidgetProcessFactory.hpp>
 #include <Process/WidgetLayer/WidgetLayerPresenter.hpp>
@@ -14,13 +14,13 @@ class JSONObject;
 
 namespace Pd
 {
-class ProcessModel final : public Dataflow::ProcessModel
+class ProcessModel final : public Process::DataflowProcess
 {
         ISCORE_SERIALIZE_FRIENDS
         PROCESS_METADATA_IMPL(Pd::ProcessModel)
     Q_OBJECT
     public:
-          using base_type = Dataflow::ProcessModel;
+          using base_type = Process::DataflowProcess;
         explicit ProcessModel(
                 const TimeVal& duration,
                 const Id<Process::ProcessModel>& id,
@@ -35,7 +35,7 @@ class ProcessModel final : public Dataflow::ProcessModel
         explicit ProcessModel(
                 Impl& vis,
                 QObject* parent) :
-            Dataflow::ProcessModel{vis, parent}
+            Process::DataflowProcess{vis, parent}
         {
             vis.writeTo(*this);
         }

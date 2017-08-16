@@ -13,7 +13,7 @@
 #include <Pd/PdProcess.hpp>
 #include <QFileInfo>
 #include <Pd/UI/PdNode.hpp>
-#include <Pd/UI/ScenarioNode.hpp>
+#include <Engine/iscore2OSSIA.hpp>
 namespace Pd
 {
 
@@ -376,7 +376,7 @@ Component::Component(
     if(e.type == Process::PortType::Message)
       in_mess.push_back(e.customData.toStdString());
 
-    inlet_addresses[i] = df.resolve(e.address);
+    inlet_addresses[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
   }
 
   for(std::size_t i = 0; i < model_outlets.size(); i++)
@@ -385,7 +385,7 @@ Component::Component(
     if(e.type == Process::PortType::Message)
       out_mess.push_back(e.customData.toStdString());
 
-    outlet_addresses[i] = df.resolve(e.address);
+    outlet_addresses[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
   }
 
   node = std::make_shared<PdGraphNode>(
@@ -407,7 +407,7 @@ Component::Component(
     if(auto addr = outlet_addresses[i])
       node->outputs()[i]->address = addr;
   }
-  iscore::component<Dataflow::PdComponent>(element.components()).mainNode().exec = node;
+  element.m_node.exec = node;
   df.execGraph->add_node(node);
 
   m_ossia_process =
