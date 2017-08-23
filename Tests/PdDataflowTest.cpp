@@ -29,18 +29,18 @@ private slots:
     using namespace ossia; using namespace ossia::net;
     generic_device dev{std::make_unique<multiplex_protocol>(), ""};
     auto& filt_node = create_node(dev.get_root_node(), "/filter");
-    auto filt_addr = filt_node.create_address(ossia::val_type::FLOAT);
+    auto filt_addr = filt_node.create_parameter(ossia::val_type::FLOAT);
     filt_addr->push_value(100);
     auto& vol_node = create_node(dev.get_root_node(), "/param");
-    auto vol_addr = vol_node.create_address(ossia::val_type::FLOAT);
+    auto vol_addr = vol_node.create_parameter(ossia::val_type::FLOAT);
     vol_addr->push_value(0.5);
     auto& note_node = create_node(dev.get_root_node(), "/note");
-    auto note_addr = note_node.create_address(ossia::val_type::FLOAT);
+    auto note_addr = note_node.create_parameter(ossia::val_type::FLOAT);
     note_addr->push_value(220.);
     auto& l_node = create_node(dev.get_root_node(), "/l");
-    auto l_addr = l_node.create_address(ossia::val_type::IMPULSE);
+    auto l_addr = l_node.create_parameter(ossia::val_type::IMPULSE);
     auto& r_node = create_node(dev.get_root_node(), "/r");
-    auto r_addr = r_node.create_address(ossia::val_type::IMPULSE);
+    auto r_addr = r_node.create_parameter(ossia::val_type::IMPULSE);
 
     auto graph = std::make_shared<ossia::graph>();
     ossia::graph& g = *graph;

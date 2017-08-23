@@ -363,11 +363,11 @@ Component::Component(
     return;
   }
 
-  std::vector<ossia::net::address_base*> inlet_addresses, outlet_addresses;
+  std::vector<ossia::net::parameter_base*> inlet_parameters, outlet_parameters;
   const std::vector<Process::Port>& model_inlets = element.inlets();
   const std::vector<Process::Port>& model_outlets = element.outlets();
-  inlet_addresses.resize(model_inlets.size());
-  outlet_addresses.resize(model_outlets.size());
+  inlet_parameters.resize(model_inlets.size());
+  outlet_parameters.resize(model_outlets.size());
 
   std::vector<std::string> in_mess, out_mess;
   for(std::size_t i = 0; i < model_inlets.size(); i++)
@@ -376,7 +376,7 @@ Component::Component(
     if(e.type == Process::PortType::Message)
       in_mess.push_back(e.customData.toStdString());
 
-    inlet_addresses[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
+    inlet_parameters[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
   }
 
   for(std::size_t i = 0; i < model_outlets.size(); i++)
@@ -385,7 +385,7 @@ Component::Component(
     if(e.type == Process::PortType::Message)
       out_mess.push_back(e.customData.toStdString());
 
-    outlet_addresses[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
+    outlet_parameters[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
   }
 
   node = std::make_shared<PdGraphNode>(
@@ -397,14 +397,14 @@ Component::Component(
         false, false
         );
 
-  for(std::size_t i = 0; i < inlet_addresses.size(); i++)
+  for(std::size_t i = 0; i < inlet_parameters.size(); i++)
   {
-    if(auto addr = inlet_addresses[i])
+    if(auto addr = inlet_parameters[i])
       node->inputs()[i]->address = addr;
   }
-  for(std::size_t i = 0; i < outlet_addresses.size(); i++)
+  for(std::size_t i = 0; i < outlet_parameters.size(); i++)
   {
-    if(auto addr = outlet_addresses[i])
+    if(auto addr = outlet_parameters[i])
       node->outputs()[i]->address = addr;
   }
   element.m_node.exec = node;
