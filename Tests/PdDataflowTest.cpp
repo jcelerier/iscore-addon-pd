@@ -4,7 +4,7 @@
 #include <ossia/network/generic/generic_device.hpp>
 #include <ossia/network/local/local.hpp>
 #include <ossia/editor/scenario/scenario.hpp>
-#include <ossia/editor/scenario/time_node.hpp>
+#include <ossia/editor/scenario/sync.hpp>
 #include <ossia/editor/scenario/time_constraint.hpp>
 #include <ossia/editor/scenario/time_event.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
@@ -131,10 +131,10 @@ private slots:
     };
 
     // Create an ossia scenario
-    auto main_start_node = std::make_shared<time_node>();
-    auto main_end_node = std::make_shared<time_node>();
+    auto main_start_node = std::make_shared<sync>();
+    auto main_end_node = std::make_shared<sync>();
 
-    // create time_events inside TimeNodes and make them interactive to the /play address
+    // create time_events inside Syncs and make them interactive to the /play address
     auto main_start_event = *(main_start_node->emplace(main_start_node->get_time_events().begin(), {}));
     auto main_end_event = *(main_end_node->emplace(main_end_node->get_time_events().begin(), {}));
 
@@ -169,13 +169,13 @@ private slots:
       return cst;
     };
 
-    std::vector<std::shared_ptr<time_node>> t(15); std::generate(t.begin(), t.end(), [&] {
-      auto tn = std::make_shared<time_node>();
-      main_scenario.add_time_node(tn);
+    std::vector<std::shared_ptr<sync>> t(15); std::generate(t.begin(), t.end(), [&] {
+      auto tn = std::make_shared<sync>();
+      main_scenario.add_sync(tn);
       return tn;
     });
 
-    t[0] = main_scenario.get_start_time_node();
+    t[0] = main_scenario.get_start_sync();
 
     std::vector<std::shared_ptr<time_event>> e(15);
     for(int i = 0; i < t.size(); i++) e[i] = *t[i]->emplace(t[i]->get_time_events().begin(), {});

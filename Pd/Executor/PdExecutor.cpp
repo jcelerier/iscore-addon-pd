@@ -43,7 +43,7 @@ struct libpd_list_wrapper
     { v.push_back(std::string(s)); }
   };
 
-  std::vector<ossia::value> to_tuple()
+  std::vector<ossia::value> to_list()
   {
     std::vector<ossia::value> vals;
     vals.reserve(size);
@@ -155,13 +155,13 @@ PdGraphNode::PdGraphNode(
   libpd_set_listhook([] (const char *recv, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(libpd_list_wrapper{argv, argc}.to_tuple());
+      v->data.push_back(libpd_list_wrapper{argv, argc}.to_list());
     }
   });
   libpd_set_messagehook([] (const char *recv, const char *msg, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(libpd_list_wrapper{argv, argc}.to_tuple());
+      v->data.push_back(libpd_list_wrapper{argv, argc}.to_list());
     }
   });
 
