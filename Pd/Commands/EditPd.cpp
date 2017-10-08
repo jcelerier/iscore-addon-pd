@@ -1,5 +1,5 @@
 #include <Pd/Commands/EditPd.hpp>
-#include <iscore/model/path/PathSerialization.hpp>
+#include <score/model/path/PathSerialization.hpp>
 
 namespace Pd
 {
@@ -14,12 +14,12 @@ EditPdPath::EditPdPath(
 
 }
 
-void EditPdPath::undo(const iscore::DocumentContext& ctx) const
+void EditPdPath::undo(const score::DocumentContext& ctx) const
 {
     m_model.find(ctx).setScript(m_old);
 }
 
-void EditPdPath::redo(const iscore::DocumentContext& ctx) const
+void EditPdPath::redo(const score::DocumentContext& ctx) const
 {
     m_model.find(ctx).setScript(m_new);
 }

@@ -1,19 +1,18 @@
 #include <Pd/Executor/PdExecutor.hpp>
 
 #include <Explorer/DocumentPlugin/DeviceDocumentPlugin.hpp>
-#include <Engine/OSSIA2iscore.hpp>
-#include <Engine/iscore2OSSIA.hpp>
+#include <Engine/OSSIA2score.hpp>
+#include <Engine/score2OSSIA.hpp>
 #include <Engine/Executor/DocumentPlugin.hpp>
 #include <vector>
 
 #include <ossia/editor/state/message.hpp>
 #include <ossia/editor/state/state.hpp>
-#include <ossia/editor/scenario/time_constraint.hpp>
 #include <ossia/dataflow/node_process.hpp>
 #include <Pd/PdProcess.hpp>
 #include <QFileInfo>
 #include <Pd/UI/PdNode.hpp>
-#include <Engine/iscore2OSSIA.hpp>
+#include <Engine/score2OSSIA.hpp>
 namespace Pd
 {
 
@@ -55,22 +54,26 @@ struct libpd_list_wrapper
 
 PdGraphNode::PdGraphNode(
     ossia::string_view folder, ossia::string_view file,
+    const Engine::Execution::Context& ctx,
     std::size_t audio_inputs,
     std::size_t audio_outputs,
-    std::size_t message_inputs,
-    std::size_t message_outputs,
-    std::vector<std::string> in_val, std::vector<std::string> out_val,
+    std::vector<Process::Port*> inport,
+    std::vector<Process::Port*> outport,
     bool midi_in, bool midi_out)
   : m_audioIns{audio_inputs}
   , m_audioOuts{audio_outputs}
-  , m_messageIns{message_inputs}
-  , m_messageOuts{message_outputs}
-  , m_inmess{std::move(in_val)}
-  , m_outmess{std::move(out_val)}
   , m_file{file}
 {
   m_currentInstance = nullptr;
 
+  for(auto proc : inport) {
+    if(proc->type == Process::PortType::Message)
+      m_inmess.push_back(proc->customData().toStdString());
+  }
+  for(auto proc : outport) {
+    if(proc->type == Process::PortType::Message)
+      m_outmess.push_back(proc->customData().toStdString());
+  }
   // Set-up buffers
   const std::size_t bs = libpd_blocksize();
   m_inbuf.resize(m_audioIns * bs);
@@ -102,33 +105,71 @@ PdGraphNode::PdGraphNode(
   bool hasAudioOut = m_audioOuts > 0;
   int audioInlets = hasAudioIn ? 1 : 0;
   int audioOutlets = hasAudioOut ? 1 : 0;
-  m_inlets.reserve(audioInlets + m_messageIns + int(midi_in));
+  m_inlets.reserve(audioInlets + m_inmess.size() + int(midi_in));
   if(hasAudioIn)
-    m_inlets.push_back(ossia::make_inlet<ossia::audio_port>());
-  for(std::size_t i = 0U; i < m_messageIns ; i++)
-    m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
-
-  m_outlets.reserve(audioOutlets + m_messageOuts + int(midi_out));
-  if(hasAudioOut)
-    m_outlets.push_back(ossia::make_outlet<ossia::audio_port>());
-  for(auto& mess : m_outmess)
   {
-    libpd_bind(mess.c_str());
-    m_outlets.push_back(ossia::make_outlet<ossia::value_port>());
+    auto port = ossia::make_inlet<ossia::audio_port>();
+    m_audio_inlet = port->data.target<ossia::audio_port>();
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[0]->address()))
+    {
+      port->address = &addr->address();
+    }
+    m_inlets.push_back(std::move(port));
   }
-
   if(midi_in)
   {
-    auto mid = ossia::make_inlet<ossia::midi_port>();
-    m_midi_inlet = mid->data.target<ossia::midi_port>();
-    m_inlets.push_back(std::move(mid));
+    auto port = ossia::make_inlet<ossia::midi_port>();
+    m_midi_inlet = port->data.target<ossia::midi_port>();
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[1]->address()))
+    {
+      port->address = &addr->address();
+    }
+    m_inlets.push_back(std::move(port));
+  }
+  m_firstInMessage = m_inlets.size();
+  for(std::size_t i = 0; i < m_inmess.size(); i++)
+  {
+    auto port = ossia::make_inlet<ossia::value_port>();
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[m_firstInMessage + i]->address()))
+    {
+      port->address = &addr->address();
+    }
+    m_inlets.push_back(port);
+  }
+
+  m_outlets.reserve(audioOutlets + m_outmess.size() + int(midi_out));
+  if(hasAudioOut)
+  {
+    auto port = ossia::make_outlet<ossia::audio_port>();
+    m_audio_outlet = port->data.target<ossia::audio_port>();
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[0]->address()))
+    {
+      port->address = &addr->address();
+    }
+    m_outlets.push_back(std::move(port));
   }
   if(midi_out)
   {
-    auto mid = ossia::make_outlet<ossia::midi_port>();
-    m_midi_outlet = mid->data.target<ossia::midi_port>();
-    m_outlets.push_back(std::move(mid));
+    auto port = ossia::make_outlet<ossia::midi_port>();
+    m_midi_outlet = port->data.target<ossia::midi_port>();
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[1]->address()))
+    {
+      port->address = &addr->address();
+    }
+    m_outlets.push_back(std::move(port));
   }
+  m_firstOutMessage = m_outlets.size();
+  for(std::size_t i = 0; i < m_outmess.size(); i++)
+  {
+    libpd_bind(m_outmess[i].c_str());
+    auto port = ossia::make_outlet<ossia::value_port>();
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[m_firstOutMessage + i]->address()))
+    {
+      port->address = &addr->address();
+    }
+    m_outlets.push_back(port);
+  }
+
 
   // Set-up message callbacks
   libpd_set_printhook([] (const char *s) { qDebug() << "string: " << s; });
@@ -209,8 +250,6 @@ PdGraphNode::PdGraphNode(
   libpd_set_midibytehook([] (int port, int byte) {
     // TODO
   });
-
-
 }
 
 
@@ -227,6 +266,7 @@ ossia::outlet*PdGraphNode::get_outlet(const char* str) const
   auto it = ossia::find(m_outmess, s);
   if(it != m_outmess.end())
     return m_outlets[std::distance(m_outmess.begin(), it) + m_audioOuts].get();
+
   return nullptr;
 }
 
@@ -308,9 +348,9 @@ void PdGraphNode::run(ossia::execution_state& e)
   }
 
   // Copy message inputs
-  for(std::size_t i = 0; i < m_messageIns; ++i)
+  for(std::size_t i = 0; i < m_inmess.size(); ++i)
   {
-    auto& dat = m_inlets[m_audioIns + i]->data.target<ossia::value_port>()->data;
+    auto& dat = m_inlets[m_firstInMessage + i]->data.target<ossia::value_port>()->data;
 
     auto mess = m_inmess[i].c_str();
     for(const auto& val : dat)
@@ -321,14 +361,17 @@ void PdGraphNode::run(ossia::execution_state& e)
   }
 
   // Process
-  libpd_process_float(1, m_inbuf.data(), m_outbuf.data());
+  libpd_process_raw(m_inbuf.data(), m_outbuf.data());
 
   if(m_audioOuts > 0)
   {
     auto ap = m_outlets[0]->data.target<ossia::audio_port>();
+    ap->samples.clear();
+    ap->samples.resize(m_audioOuts);
     // Copy audio outputs. Message inputs are copied in callbacks.
     for(std::size_t i = 0U; i < m_audioOuts; ++i)
     {
+      ap->samples[i].resize(bs);
       std::copy_n(m_outbuf.begin() + i * bs, bs, ap->samples[i].begin());
     }
   }
@@ -344,17 +387,14 @@ void PdGraphNode::add_dzero(std::string& s) const
 }
 
 
-
-
 Component::Component(
-    ::Engine::Execution::ConstraintComponent& parentConstraint,
+    ::Engine::Execution::IntervalComponent& parentInterval,
     Pd::ProcessModel& element,
-    const Dataflow::DocumentPlugin& df,
     const ::Engine::Execution::Context& ctx,
-    const Id<iscore::Component>& id,
+    const Id<score::Component>& id,
     QObject* parent):
   DataflowProcessComponent{
-      parentConstraint, element, ctx, id, "PdComponent", parent}
+      parentInterval, element, ctx, id, "PdComponent", parent}
 {
   QFileInfo f(element.script());
   if(!f.exists())
@@ -363,58 +403,46 @@ Component::Component(
     return;
   }
 
-  std::vector<ossia::net::parameter_base*> inlet_parameters, outlet_parameters;
-  const std::vector<Process::Port>& model_inlets = element.inlets();
-  const std::vector<Process::Port>& model_outlets = element.outlets();
-  inlet_parameters.resize(model_inlets.size());
-  outlet_parameters.resize(model_outlets.size());
+  const std::vector<Process::Port*>& model_inlets = element.inlets();
+  const std::vector<Process::Port*>& model_outlets = element.outlets();
 
   std::vector<std::string> in_mess, out_mess;
   for(std::size_t i = 0; i < model_inlets.size(); i++)
   {
-    const Process::Port& e = model_inlets[i];
+    const Process::Port& e = *model_inlets[i];
     if(e.type == Process::PortType::Message)
-      in_mess.push_back(e.customData.toStdString());
+      in_mess.push_back(e.customData().toStdString());
 
-    inlet_parameters[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
   }
 
   for(std::size_t i = 0; i < model_outlets.size(); i++)
   {
-    const Process::Port& e = model_outlets[i];
+    const Process::Port& e = *model_outlets[i];
     if(e.type == Process::PortType::Message)
-      out_mess.push_back(e.customData.toStdString());
-
-    outlet_parameters[i] = Engine::iscore_to_ossia::address(e.address.address, ctx.devices.list());
+      out_mess.push_back(e.customData().toStdString());
   }
 
   node = std::make_shared<PdGraphNode>(
         f.canonicalPath().toStdString(),
         f.fileName().toStdString(),
-        element.audioInlets(), element.audioOutlets(),
-        element.messageInlets(), element.messageOutlets(),
-        std::move(in_mess), std::move(out_mess),
-        false, false
+           ctx,
+        element.audioInputs(), element.audioOutputs(),
+        model_inlets, model_outlets,
+        element.midiInput(), element.midiOutput()
         );
 
-  for(std::size_t i = 0; i < inlet_parameters.size(); i++)
-  {
-    if(auto addr = inlet_parameters[i])
-      node->inputs()[i]->address = addr;
-  }
-  for(std::size_t i = 0; i < outlet_parameters.size(); i++)
-  {
-    if(auto addr = outlet_parameters[i])
-      node->outputs()[i]->address = addr;
-  }
-  element.m_node.exec = node;
-  df.execGraph->add_node(node);
-
   m_ossia_process =
-      std::make_shared<ossia::node_process>(df.execGraph, node);
+      std::make_shared<ossia::node_process>(ctx.plugin.execGraph, node);
+
+  for(auto p : model_inlets)
+    ctx.plugin.nodes.insert({p, node});
+  for(auto p : model_outlets)
+    ctx.plugin.nodes.insert({p, node});
+
+  ctx.plugin.execGraph->add_node(node);
 }
 
-PdGraphNode* PdGraphNode::m_currentInstance;
+PdGraphNode* PdGraphNode::m_currentInstance{};
 
 }
 

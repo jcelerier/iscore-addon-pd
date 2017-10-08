@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(iscore_addon_pd LANGUAGES CXX)
+project(score_addon_pd LANGUAGES CXX)
 
 if(ANDROID)
   set(LIBPD_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libpd/libs/android/libpd.a)
@@ -10,7 +10,7 @@ if(NOT LIBPD_LIBRARY)
     message("Please build 3rdparty/libpd (git submodule update --init --recursive && make) ")
     return()
 endif()
-iscore_common_setup()
+score_common_setup()
 
 # Packages
 # Files & main target
@@ -26,7 +26,7 @@ set(HDRS
 
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.hpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/iscore_addon_pd.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/score_addon_pd.hpp"
 
 )
 
@@ -39,22 +39,22 @@ set(SRCS
 
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.cpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/iscore_addon_pd.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/score_addon_pd.cpp"
 )
 
 add_library(${PROJECT_NAME} ${SRCS} ${HDRS})
 
-iscore_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
+score_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} PUBLIC -L/usr/local/lib )
 endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC iscore_plugin_engine iscore_plugin_audio ${LIBPD_LIBRARY} portaudio dl)
+target_link_libraries(${PROJECT_NAME} PUBLIC score_plugin_engine score_plugin_scenario ${LIBPD_LIBRARY} portaudio dl)
 target_include_directories(${PROJECT_NAME} PUBLIC
   3rdparty/libpd/libpd_wrapper
   3rdparty/libpd/pure-data/src
   )
 
-setup_iscore_plugin(${PROJECT_NAME})
+setup_score_plugin(${PROJECT_NAME})
 
 
-setup_iscore_tests(Tests)
+setup_score_tests(Tests)

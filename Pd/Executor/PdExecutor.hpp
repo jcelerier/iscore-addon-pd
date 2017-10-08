@@ -8,57 +8,32 @@
 #include <memory>
 #include <Engine/Executor/ProcessComponent.hpp>
 #include <Engine/Executor/ExecutorContext.hpp>
-#include <iscore/document/DocumentContext.hpp>
-#include <iscore/document/DocumentInterface.hpp>
+#include <score/document/DocumentContext.hpp>
+#include <score/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
 #include <Device/Protocol/DeviceList.hpp>
 #include <z_libpd.h>
 #include <Dataflow/DocumentPlugin.hpp>
 #include <ossia/detail/string_view.hpp>
-#include <iscore_addon_pd_export.h>
+#include <score_addon_pd_export.h>
 
 namespace Pd
 {
 
-template <typename ProcessComponent_T>
-class ProcessComponentFactory_T
-    : public iscore::
-          GenericComponentFactoryImpl<ProcessComponent_T, Engine::Execution::ProcessComponentFactory>
-{
-public:
-  using model_type = typename ProcessComponent_T::model_type;
-
-  std::shared_ptr<Engine::Execution::ProcessComponent> make(
-      Engine::Execution::ConstraintComponent& cst,
-      Process::ProcessModel& proc,
-      const Engine::Execution::Context& ctx,
-      const Id<iscore::Component>& id,
-      QObject* parent) const final override
-  {
-    auto& df_plug = ctx.doc.plugin<Dataflow::DocumentPlugin>();
-    auto comp = std::make_shared<ProcessComponent_T>(
-          cst, static_cast<typename ProcessComponent_T::model_type&>(proc), df_plug, ctx, id, parent);
-    this->init(comp.get());
-    return comp;
-  }
-};
-
 
 class ProcessModel;
 
-class ISCORE_ADDON_PD_EXPORT PdGraphNode final :
+class SCORE_ADDON_PD_EXPORT PdGraphNode final :
     public ossia::graph_node
 {
 public:
   PdGraphNode(
-      ossia::string_view folder,
-      ossia::string_view file,
+      ossia::string_view folder, ossia::string_view file,
+      const Engine::Execution::Context& ctx,
       std::size_t audio_inputs,
       std::size_t audio_outputs,
-      std::size_t message_inputs,
-      std::size_t message_outputs,
-      std::vector<std::string> in_val,
-      std::vector<std::string> out_val,
+      std::vector<Process::Port*> inmess,
+      std::vector<Process::Port*> outmess,
       bool midi_in = true,
       bool midi_out = true
       );
@@ -96,10 +71,15 @@ private:
   t_pdinstance * m_instance{};
   int m_dollarzero = 0;
 
-  std::size_t m_audioIns{}, m_audioOuts{};
-  std::size_t m_messageIns{}, m_messageOuts{};
+  std::size_t m_audioIns{};
+  std::size_t m_audioOuts{};
+  std::vector<Process::Port*> m_inport, m_outport;
   std::vector<std::string> m_inmess, m_outmess;
+
   std::vector<float> m_inbuf, m_outbuf;
+  std::size_t m_firstInMessage{}, m_firstOutMessage{};
+  ossia::audio_port* m_audio_inlet{};
+  ossia::audio_port* m_audio_outlet{};
   ossia::midi_port* m_midi_inlet{};
   ossia::midi_port* m_midi_outlet{};
   std::string m_file;
@@ -129,14 +109,13 @@ class Component final :
     public:
         using model_type = Pd::ProcessModel;
         Component(
-                Engine::Execution::ConstraintComponent& parentConstraint,
+                Engine::Execution::IntervalComponent& parentInterval,
                 Pd::ProcessModel& element,
-                const Dataflow::DocumentPlugin& df,
                 const Engine::Execution::Context& ctx,
-                const Id<iscore::Component>& id,
+                const Id<score::Component>& id,
                 QObject* parent);
 };
 
 
-using ComponentFactory = Pd::ProcessComponentFactory_T<Pd::Component>;
+using ComponentFactory = Engine::Execution::ProcessComponentFactory_T<Pd::Component>;
 }
