@@ -63,6 +63,8 @@ void ProcessModel::setAudioOutputs(int audioOutputs)
 
 void ProcessModel::setScript(const QString& script)
 {
+  setMidiInput(false);
+  setMidiOutput(false);
   for(auto p : m_inlets)
     delete p;
   m_inlets.clear();
@@ -84,7 +86,7 @@ void ProcessModel::setScript(const QString& script)
 
     auto patch = f.readAll();
     {
-      static const QRegularExpression adc_regex{"adc~;"};
+      static const QRegularExpression adc_regex{"adc~"};
       auto m = adc_regex.match(patch);
       if(m.hasMatch())
       {
@@ -97,7 +99,7 @@ void ProcessModel::setScript(const QString& script)
     }
 
     {
-      static const QRegularExpression dac_regex{"dac~;"};
+      static const QRegularExpression dac_regex{"dac~"};
       auto m = dac_regex.match(patch);
       if(m.hasMatch())
       {
@@ -107,6 +109,36 @@ void ProcessModel::setScript(const QString& script)
         p->type = Process::PortType::Audio;
         p->num = outl++;
         m_outlets.push_back(p);
+      }
+    }
+
+    {
+      static const QRegularExpression midi_regex{"(midiin|notein|controlin)"};
+      auto m = midi_regex.match(patch);
+      if(m.hasMatch())
+      {
+        auto p = new Process::Port{get_next_id(), this};
+        p->outlet = false;
+        p->type = Process::PortType::Midi;
+        p->num = inl++;
+        m_inlets.push_back(p);
+
+        setMidiInput(true);
+      }
+    }
+
+    {
+      static const QRegularExpression midi_regex{"(midiiout|noteout|controlout)"};
+      auto m = midi_regex.match(patch);
+      if(m.hasMatch())
+      {
+        auto p = new Process::Port{get_next_id(), this};
+        p->outlet = true;
+        p->type = Process::PortType::Midi;
+        p->num = outl++;
+        m_outlets.push_back(p);
+
+        setMidiOutput(true);
       }
     }
 

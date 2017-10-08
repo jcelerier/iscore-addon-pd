@@ -105,6 +105,7 @@ PdGraphNode::PdGraphNode(
   bool hasAudioOut = m_audioOuts > 0;
   int audioInlets = hasAudioIn ? 1 : 0;
   int audioOutlets = hasAudioOut ? 1 : 0;
+
   m_inlets.reserve(audioInlets + m_inmess.size() + int(midi_in));
   if(hasAudioIn)
   {
@@ -120,7 +121,7 @@ PdGraphNode::PdGraphNode(
   {
     auto port = ossia::make_inlet<ossia::midi_port>();
     m_midi_inlet = port->data.target<ossia::midi_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[1]->address()))
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[m_inlets.size()]->address()))
     {
       port->address = &addr->address();
     }
@@ -152,7 +153,7 @@ PdGraphNode::PdGraphNode(
   {
     auto port = ossia::make_outlet<ossia::midi_port>();
     m_midi_outlet = port->data.target<ossia::midi_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[1]->address()))
+    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[m_outlets.size()]->address()))
     {
       port->address = &addr->address();
     }
@@ -318,25 +319,25 @@ void PdGraphNode::run(ossia::execution_state& e)
       switch(mess.getMessageType())
       {
         case mm::MessageType::NOTE_OFF:
-          libpd_noteon(mess.getChannel(), mess.data[1], 0);
+          libpd_noteon(mess.getChannel() - 1, mess.data[1], 0);
           break;
         case mm::MessageType::NOTE_ON:
-          libpd_noteon(mess.getChannel(), mess.data[1], mess.data[2]);
+          libpd_noteon(mess.getChannel() - 1, mess.data[1], mess.data[2]);
           break;
         case mm::MessageType::POLY_PRESSURE:
-          libpd_polyaftertouch(mess.getChannel(), mess.data[1], mess.data[2]);
+          libpd_polyaftertouch(mess.getChannel() - 1, mess.data[1], mess.data[2]);
           break;
         case mm::MessageType::CONTROL_CHANGE:
-          libpd_controlchange(mess.getChannel(), mess.data[1], mess.data[2]);
+          libpd_controlchange(mess.getChannel() - 1, mess.data[1], mess.data[2]);
           break;
         case mm::MessageType::PROGRAM_CHANGE:
-          libpd_programchange(mess.getChannel(), mess.data[1]);
+          libpd_programchange(mess.getChannel() - 1, mess.data[1]);
           break;
         case mm::MessageType::AFTERTOUCH:
-          libpd_aftertouch(mess.getChannel(), mess.data[1]);
+          libpd_aftertouch(mess.getChannel() - 1, mess.data[1]);
           break;
         case mm::MessageType::PITCH_BEND:
-          libpd_pitchbend(mess.getChannel(), mess.data[1] - 8192);
+          libpd_pitchbend(mess.getChannel() - 1, mess.data[1] - 8192);
           break;
         case mm::MessageType::INVALID:
         default:
