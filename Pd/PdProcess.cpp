@@ -3,6 +3,7 @@
 #include <score/serialization/JSONValueVisitor.hpp>
 #include <score/serialization/JSONVisitor.hpp>
 #include <QRegularExpression>
+#include <Process/Dataflow/DataflowObjects.hpp>
 #include <QFile>
 
 namespace Pd
@@ -238,25 +239,6 @@ void DataStreamWriter::write(Pd::ProcessModel& proc)
   proc.setScript(str);
 
   checkDelimiter();
-}
-
-template<typename T>
-QJsonArray toJsonArray(const std::vector<T*>& array)
-{
-  QJsonArray arr;
-  for (auto& v : array)
-    arr.push_back(toJsonObject(*v));
-  return arr;
-}
-
-template<typename T>
-void fromJsonArray(const QJsonArray& arr, std::vector<T*>& array, QObject* parent)
-{
-  for (const auto& v : arr)
-  {
-    auto obj = v.toObject();
-    array.push_back(new T{JSONObjectWriter{obj}, parent});
-  }
 }
 
 template <>
