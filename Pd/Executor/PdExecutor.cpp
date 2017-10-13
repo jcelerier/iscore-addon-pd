@@ -413,7 +413,6 @@ Component::Component(
     const Process::Port& e = *model_inlets[i];
     if(e.type == Process::PortType::Message)
       in_mess.push_back(e.customData().toStdString());
-
   }
 
   for(std::size_t i = 0; i < model_outlets.size(); i++)

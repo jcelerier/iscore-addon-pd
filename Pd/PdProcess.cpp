@@ -2,8 +2,8 @@
 #include <score/serialization/DataStreamVisitor.hpp>
 #include <score/serialization/JSONValueVisitor.hpp>
 #include <score/serialization/JSONVisitor.hpp>
-#include <QRegularExpression>
 #include <Process/Dataflow/DataflowObjects.hpp>
+#include <QRegularExpression>
 #include <QFile>
 
 namespace Pd
@@ -95,6 +95,8 @@ void ProcessModel::setScript(const QString& script)
         p->outlet = false;
         p->type = Process::PortType::Audio;
         p->num = inl++;
+        p->setCustomData("Audio In");
+        setAudioInputs(2);
         m_inlets.push_back(p);
       }
     }
@@ -109,6 +111,8 @@ void ProcessModel::setScript(const QString& script)
         p->propagate = true;
         p->type = Process::PortType::Audio;
         p->num = outl++;
+        p->setCustomData("Audio Out");
+        setAudioOutputs(2);
         m_outlets.push_back(p);
       }
     }
@@ -122,6 +126,7 @@ void ProcessModel::setScript(const QString& script)
         p->outlet = false;
         p->type = Process::PortType::Midi;
         p->num = inl++;
+        p->setCustomData("Midi In");
         m_inlets.push_back(p);
 
         setMidiInput(true);
@@ -137,6 +142,7 @@ void ProcessModel::setScript(const QString& script)
         p->outlet = true;
         p->type = Process::PortType::Midi;
         p->num = outl++;
+        p->setCustomData("Midi Out");
         m_outlets.push_back(p);
 
         setMidiOutput(true);

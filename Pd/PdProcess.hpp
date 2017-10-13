@@ -9,8 +9,6 @@
 #include <score/model/Identifier.hpp>
 #include <score/selection/Selection.hpp>
 #include <score/serialization/VisitorInterface.hpp>
-class DataStream;
-class JSONObject;
 
 namespace Pd
 {
