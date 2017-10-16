@@ -299,14 +299,15 @@ void PdGraphNode::run(ossia::execution_state& e)
 
   const auto bs = libpd_blocksize();
 
+  // Clear audio inputs
+  ossia::fill(m_inbuf, 0.);
+
   // Copy audio inputs
   if(m_audioIns > 0)
   {
-    auto ap = m_inlets[0]->data.target<ossia::audio_port>();
-
-    for(std::size_t i = 0U; i < m_audioIns; i++)
+    for(std::size_t i = 0U; i < std::min(m_audioIns, m_audio_inlet->samples.size()); i++)
     {
-      std::copy_n(ap->samples[i].begin(), bs, m_inbuf.begin() + i * bs);
+      std::copy_n(m_audio_inlet->samples[i].begin(), bs, m_inbuf.begin() + i * bs);
     }
   }
 
@@ -366,14 +367,13 @@ void PdGraphNode::run(ossia::execution_state& e)
 
   if(m_audioOuts > 0)
   {
-    auto ap = m_outlets[0]->data.target<ossia::audio_port>();
-    ap->samples.clear();
-    ap->samples.resize(m_audioOuts);
+    m_audio_outlet->samples.clear();
+    m_audio_outlet->samples.resize(m_audioOuts);
     // Copy audio outputs. Message inputs are copied in callbacks.
     for(std::size_t i = 0U; i < m_audioOuts; ++i)
     {
-      ap->samples[i].resize(bs);
-      std::copy_n(m_outbuf.begin() + i * bs, bs, ap->samples[i].begin());
+      m_audio_outlet->samples[i].resize(bs);
+      std::copy_n(m_outbuf.begin() + i * bs, bs, m_audio_outlet->samples[i].begin());
     }
   }
 

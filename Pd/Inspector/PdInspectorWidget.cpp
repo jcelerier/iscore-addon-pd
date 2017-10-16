@@ -44,13 +44,13 @@ PdWidget::PdWidget(const Pd::ProcessModel& proc, const score::DocumentContext& c
   m_midiIn.setChecked(m_proc.midiInput());
   m_midiOut.setChecked(m_proc.midiOutput());
   con(m_audioIn, SignalUtils::QSpinBox_valueChanged_int(),
-      this, [&] (int val) { m_disp.submitCommand<SetAudioIns>(m_proc, val); });
+      this, [&] (int val) { if(val != m_proc.audioInputs()) m_disp.submitCommand<SetAudioIns>(m_proc, val); });
   con(m_audioOut, SignalUtils::QSpinBox_valueChanged_int(),
-      this, [&] (int val) { m_disp.submitCommand<SetAudioOuts>(m_proc, val); });
+      this, [&] (int val) { if(val != m_proc.audioOutputs()) m_disp.submitCommand<SetAudioOuts>(m_proc, val); });
   con(m_midiIn, &QCheckBox::toggled,
-      this, [&] (bool val) { m_disp.submitCommand<SetMidiIn>(m_proc, val); });
+      this, [&] (bool val) { if(val != m_proc.midiInput()) m_disp.submitCommand<SetMidiIn>(m_proc, val); });
   con(m_midiOut, &QCheckBox::toggled,
-      this, [&] (bool val) { m_disp.submitCommand<SetMidiOut>(m_proc, val); });
+      this, [&] (bool val) { if(val != m_proc.midiOutput()) m_disp.submitCommand<SetMidiOut>(m_proc, val); });
 
   con(proc, &ProcessModel::audioInputsChanged, this, [&] (int i) {
     if(m_audioIn.value() != i)

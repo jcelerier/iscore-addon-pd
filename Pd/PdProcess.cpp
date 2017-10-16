@@ -203,6 +203,7 @@ const QString&ProcessModel::script() const
 template <>
 void DataStreamReader::read(const Pd::ProcessModel& proc)
 {
+  insertDelimiter();
   m_stream << (int32_t)proc.m_inlets.size();
   for(auto v : proc.m_inlets)
     m_stream << *v;
@@ -221,6 +222,7 @@ void DataStreamReader::read(const Pd::ProcessModel& proc)
 template <>
 void DataStreamWriter::write(Pd::ProcessModel& proc)
 {
+  checkDelimiter();
   {
     int32_t ports;
     m_stream >> ports;
@@ -235,14 +237,13 @@ void DataStreamWriter::write(Pd::ProcessModel& proc)
       proc.m_outlets.push_back(new Process::Port{*this, &proc});
     }
   }
-  QString str;
+
   m_stream
-      >> str
+      >> proc.m_script
       >> proc.m_audioInputs
       >> proc.m_audioOutputs
       >> proc.m_midiInput
       >> proc.m_midiOutput;
-  proc.setScript(str);
 
   checkDelimiter();
 }
@@ -264,7 +265,7 @@ void JSONObjectWriter::write(Pd::ProcessModel& proc)
 {
   fromJsonArray(obj["Inlets"].toArray(), proc.m_inlets, &proc);
   fromJsonArray(obj["Outlets"].toArray(), proc.m_outlets, &proc);
-  proc.setScript(obj["Script"].toString());
+  proc.m_script = obj["Script"].toString();
   proc.m_audioInputs = obj["AudioInputs"].toInt();
   proc.m_audioOutputs = obj["AudioOutputs"].toInt();
   proc.m_midiInput = obj["MidiInput"].toBool();
