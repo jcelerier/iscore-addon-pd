@@ -434,10 +434,12 @@ Component::Component(
   m_ossia_process =
       std::make_shared<ossia::node_process>(ctx.plugin.execGraph, node);
 
+  int i = 0;
   for(auto p : model_inlets)
-    ctx.plugin.nodes.insert({p, node});
+    ctx.plugin.inlets.insert({p, {node, node->inputs()[i++]}});
+  i = 0;
   for(auto p : model_outlets)
-    ctx.plugin.nodes.insert({p, node});
+    ctx.plugin.outlets.insert({p, {node, node->outputs()[i++]}});
 
   ctx.plugin.execGraph->add_node(node);
 }

@@ -94,7 +94,6 @@ void ProcessModel::setScript(const QString& script)
         auto p = new Process::Port{get_next_id(), this};
         p->outlet = false;
         p->type = Process::PortType::Audio;
-        p->num = inl++;
         p->setCustomData("Audio In");
         setAudioInputs(2);
         m_inlets.push_back(p);
@@ -110,7 +109,6 @@ void ProcessModel::setScript(const QString& script)
         p->outlet = true;
         p->propagate = true;
         p->type = Process::PortType::Audio;
-        p->num = outl++;
         p->setCustomData("Audio Out");
         setAudioOutputs(2);
         m_outlets.push_back(p);
@@ -125,7 +123,6 @@ void ProcessModel::setScript(const QString& script)
         auto p = new Process::Port{get_next_id(), this};
         p->outlet = false;
         p->type = Process::PortType::Midi;
-        p->num = inl++;
         p->setCustomData("Midi In");
         m_inlets.push_back(p);
 
@@ -141,7 +138,6 @@ void ProcessModel::setScript(const QString& script)
         auto p = new Process::Port{get_next_id(), this};
         p->outlet = true;
         p->type = Process::PortType::Midi;
-        p->num = outl++;
         p->setCustomData("Midi Out");
         m_outlets.push_back(p);
 
@@ -162,7 +158,6 @@ void ProcessModel::setScript(const QString& script)
           auto p = new Process::Port{get_next_id(), this};
           p->outlet = false;
           p->type = Process::PortType::Message;
-          p->num = inl++;
           p->setCustomData(var);
           m_inlets.push_back(p);
         }
@@ -182,7 +177,6 @@ void ProcessModel::setScript(const QString& script)
           auto p = new Process::Port{get_next_id(), this};
           p->outlet = true;
           p->type = Process::PortType::Message;
-          p->num = outl++;
           p->setCustomData(var);
           m_outlets.push_back(p);
         }
