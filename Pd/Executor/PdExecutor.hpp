@@ -15,6 +15,7 @@
 #include <z_libpd.h>
 #include <Dataflow/DocumentPlugin.hpp>
 #include <ossia/detail/string_view.hpp>
+#include <boost/circular_buffer.hpp>
 #include <score_addon_pd_export.h>
 
 namespace Pd
@@ -63,7 +64,7 @@ private:
     // TODO convert other types
   };
 
-  void run(ossia::execution_state& e) override;
+  void run(ossia::token_request t, ossia::execution_state& e) override;
   void add_dzero(std::string& s) const;
 
   static PdGraphNode* m_currentInstance;
@@ -77,6 +78,7 @@ private:
   std::vector<std::string> m_inmess, m_outmess;
 
   std::vector<float> m_inbuf, m_outbuf;
+  std::vector<boost::circular_buffer<float>> m_prev_outbuf;
   std::size_t m_firstInMessage{}, m_firstOutMessage{};
   ossia::audio_port* m_audio_inlet{};
   ossia::audio_port* m_audio_outlet{};

@@ -13,6 +13,7 @@
 #include <QFileInfo>
 #include <Pd/UI/PdNode.hpp>
 #include <Engine/score2OSSIA.hpp>
+#include <ossia/dataflow/audio_parameter.hpp>
 namespace Pd
 {
 
@@ -78,6 +79,9 @@ PdGraphNode::PdGraphNode(
   const std::size_t bs = libpd_blocksize();
   m_inbuf.resize(m_audioIns * bs);
   m_outbuf.resize(m_audioOuts * bs);
+  m_prev_outbuf.resize(m_audioOuts);
+  for(auto& circ : m_prev_outbuf)
+    circ.set_capacity(8192);
 
   // Create instance
   m_instance = pdinstance_new();
@@ -290,7 +294,7 @@ ossia::midi_port*PdGraphNode::get_midi_out() const
 }
 
 
-void PdGraphNode::run(ossia::execution_state& e)
+void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
 {
   // Setup
   pd_setinstance(m_instance);
@@ -307,7 +311,10 @@ void PdGraphNode::run(ossia::execution_state& e)
   {
     for(std::size_t i = 0U; i < std::min(m_audioIns, m_audio_inlet->samples.size()); i++)
     {
-      std::copy_n(m_audio_inlet->samples[i].begin(), bs, m_inbuf.begin() + i * bs);
+      std::copy_n(
+            m_audio_inlet->samples[i].begin(),
+            std::min((std::size_t)bs, (std::size_t)m_audio_inlet->samples[i].size()),
+            m_inbuf.begin() + i * bs);
     }
   }
 
@@ -361,19 +368,54 @@ void PdGraphNode::run(ossia::execution_state& e)
     }
     dat.clear();
   }
-
-  // Process
-  libpd_process_raw(m_inbuf.data(), m_outbuf.data());
+  // Compute number of samples to process
+  int64_t req_samples = norm(t.date, m_prev_date);
+  if(m_audioOuts == 0)
+  {
+    libpd_process_raw(m_inbuf.data(), m_outbuf.data());
+  }
+  else if(req_samples > m_prev_outbuf[0].size())
+  {
+    int64_t additional_samples = req_samples - m_prev_outbuf[0].size();
+    while(additional_samples > 0)
+    {
+      libpd_process_raw(m_inbuf.data(), m_outbuf.data());
+      for(std::size_t i = 0; i < m_audioOuts; ++i)
+      {
+        for(std::size_t j = 0; j < bs; j++)
+        {
+          m_prev_outbuf[i].push_back(m_outbuf[i * bs + j]);
+        }
+      }
+      additional_samples -= bs;
+    }
+  }
 
   if(m_audioOuts > 0)
   {
-    m_audio_outlet->samples.clear();
-    m_audio_outlet->samples.resize(m_audioOuts);
     // Copy audio outputs. Message inputs are copied in callbacks.
+    // Note: due to Pd processing samples 64 by 64 this is not sample-accurate.
+    // i.e. we always start copying from the beginning of the latest buffer computed by pd.
+    // The solution is to store the last N samples computed and read them if necessary, but then this causes
+    // problems if messages & parameters changed in between.
+
+    auto& ap = m_audio_outlet->samples;
+    ap.resize(m_audioOuts);
     for(std::size_t i = 0U; i < m_audioOuts; ++i)
     {
-      m_audio_outlet->samples[i].resize(bs);
-      std::copy_n(m_outbuf.begin() + i * bs, bs, m_audio_outlet->samples[i].begin());
+      ap[i].resize(std::max(int64_t(ap[i].size()), int64_t(t.offset)));
+      for(std::size_t j = 0U; j < req_samples; j++)
+      {
+        ap[i].push_back(m_prev_outbuf[i].front());
+        m_prev_outbuf[i].pop_front();
+      }
+
+      ossia::do_fade(
+            t.start_discontinuous,
+            t.end_discontinuous,
+            ap[i],
+            t.offset.impl,
+            t.offset.impl + req_samples);
     }
   }
 
@@ -432,7 +474,7 @@ Component::Component(
         );
 
   m_ossia_process =
-      std::make_shared<ossia::node_process>(ctx.plugin.execGraph, node);
+      std::make_shared<ossia::node_process>(node);
 
   int i = 0;
   for(auto p : model_inlets)
