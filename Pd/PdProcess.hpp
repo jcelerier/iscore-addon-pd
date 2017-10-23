@@ -53,46 +53,20 @@ class ProcessModel final : public Process::ProcessModel
 
     int audioInputs() const;
     int audioOutputs() const;
-
-    bool midiInput() const
-    {
-      return m_midiInput;
-    }
-
-    bool midiOutput() const
-    {
-      return m_midiOutput;
-    }
+    bool midiInput() const;
+    bool midiOutput() const;
 
   public slots:
     void setAudioInputs(int audioInputs);
     void setAudioOutputs(int audioOutputs);
-
-    void setMidiInput(bool midiInput)
-    {
-      if (m_midiInput == midiInput)
-        return;
-
-      m_midiInput = midiInput;
-      emit midiInputChanged(m_midiInput);
-    }
-
-    void setMidiOutput(bool midiOutput)
-    {
-      if (m_midiOutput == midiOutput)
-        return;
-
-      m_midiOutput = midiOutput;
-      emit midiOutputChanged(m_midiOutput);
-    }
+    void setMidiInput(bool midiInput);
+    void setMidiOutput(bool midiOutput);
 
   signals:
     void scriptChanged(QString);
     void audioInputsChanged(int audioInputs);
     void audioOutputsChanged(int audioOutputs);
-
     void midiInputChanged(bool midiInput);
-
     void midiOutputChanged(bool midiOutput);
 
   private:

@@ -44,6 +44,16 @@ int ProcessModel::audioOutputs() const
   return m_audioOutputs;
 }
 
+bool ProcessModel::midiInput() const
+{
+  return m_midiInput;
+}
+
+bool ProcessModel::midiOutput() const
+{
+  return m_midiOutput;
+}
+
 void ProcessModel::setAudioInputs(int audioInputs)
 {
   if (m_audioInputs == audioInputs)
@@ -62,6 +72,24 @@ void ProcessModel::setAudioOutputs(int audioOutputs)
           emit audioOutputsChanged(m_audioOutputs);
 }
 
+void ProcessModel::setMidiInput(bool midiInput)
+{
+  if (m_midiInput == midiInput)
+    return;
+
+  m_midiInput = midiInput;
+  emit midiInputChanged(m_midiInput);
+}
+
+void ProcessModel::setMidiOutput(bool midiOutput)
+{
+  if (m_midiOutput == midiOutput)
+    return;
+
+  m_midiOutput = midiOutput;
+  emit midiOutputChanged(m_midiOutput);
+}
+
 void ProcessModel::setScript(const QString& script)
 {
   setMidiInput(false);
@@ -78,8 +106,6 @@ void ProcessModel::setScript(const QString& script)
   if(f.open(QIODevice::ReadOnly))
   {
     int i = 0;
-    int inl = 0;
-    int outl = 0;
     auto get_next_id = [&] {
       i++;
       return Id<Process::Port>(i);

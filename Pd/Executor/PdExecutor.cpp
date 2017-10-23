@@ -85,7 +85,6 @@ PdGraphNode::PdGraphNode(
 
   // Create instance
   m_instance = pdinstance_new();
-  qDebug() << "PdGraphNode: Allocating " << m_instance;
   pd_setinstance(m_instance);
 
   // Enable audio
@@ -260,7 +259,6 @@ PdGraphNode::PdGraphNode(
 
 PdGraphNode::~PdGraphNode()
 {
-  qDebug() << "PdGraphNode: Freeeing " << m_instance;
   pdinstance_free(m_instance);
 }
 
@@ -301,7 +299,7 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
   m_currentInstance = this;
   libpd_init_audio(m_audioIns, m_audioOuts, 44100);
 
-  const auto bs = libpd_blocksize();
+  const uint64_t bs = libpd_blocksize();
 
   // Clear audio inputs
   ossia::fill(m_inbuf, 0.);
@@ -368,17 +366,26 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
     }
     dat.clear();
   }
+
   // Compute number of samples to process
-  int64_t req_samples = norm(t.date, m_prev_date);
+  optional<ossia::time_value> real_date;
+  if(m_prev_date >= t.date)
+  {
+    real_date = t.date;
+    t.date = m_prev_date + t.date;
+  }
+  uint64_t req_samples = norm(t.date, m_prev_date);
+
   if(m_audioOuts == 0)
   {
     libpd_process_raw(m_inbuf.data(), m_outbuf.data());
   }
   else if(req_samples > m_prev_outbuf[0].size())
   {
-    int64_t additional_samples = req_samples - m_prev_outbuf[0].size();
+    int64_t additional_samples = std::max(bs, req_samples - m_prev_outbuf[0].size());
     while(additional_samples > 0)
     {
+      // TODO remove the first n samples of audio input so that it makes sense
       libpd_process_raw(m_inbuf.data(), m_outbuf.data());
       for(std::size_t i = 0; i < m_audioOuts; ++i)
       {
@@ -403,7 +410,7 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
     ap.resize(m_audioOuts);
     for(std::size_t i = 0U; i < m_audioOuts; ++i)
     {
-      ap[i].resize(std::max(int64_t(ap[i].size()), int64_t(t.offset)));
+      ap[i].resize(std::max(uint64_t(ap[i].size()), uint64_t(t.offset)));
       for(std::size_t j = 0U; j < req_samples; j++)
       {
         ap[i].push_back(m_prev_outbuf[i].front());
@@ -429,6 +436,14 @@ void PdGraphNode::add_dzero(std::string& s) const
   s = std::to_string(m_dollarzero) + "-" + s;
 }
 
+class pd_process final : public ossia::node_process
+{
+public:
+  using ossia::node_process::node_process;
+  void start(ossia::state& st) override
+  {
+  }
+};
 
 Component::Component(
     ::Engine::Execution::IntervalComponent& parentInterval,
@@ -474,7 +489,7 @@ Component::Component(
         );
 
   m_ossia_process =
-      std::make_shared<ossia::node_process>(node);
+      std::make_shared<pd_process>(node);
 
   int i = 0;
   for(auto p : model_inlets)
