@@ -14,6 +14,7 @@
 #include <Pd/UI/PdNode.hpp>
 #include <Engine/score2OSSIA.hpp>
 #include <ossia/dataflow/audio_parameter.hpp>
+#include <ossia-qt/js_utilities.hpp>
 namespace Pd
 {
 
@@ -362,6 +363,7 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
     auto mess = m_inmess[i].c_str();
     for(const auto& val : dat)
     {
+      qDebug() << val;
       val.apply(ossia_to_pd_value{mess});
     }
     dat.clear();

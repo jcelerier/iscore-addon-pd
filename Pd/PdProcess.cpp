@@ -2,7 +2,7 @@
 #include <score/serialization/DataStreamVisitor.hpp>
 #include <score/serialization/JSONValueVisitor.hpp>
 #include <score/serialization/JSONVisitor.hpp>
-#include <Process/Dataflow/DataflowObjects.hpp>
+#include <Process/Dataflow/Port.hpp>
 #include <QRegularExpression>
 #include <QFile>
 
@@ -133,7 +133,7 @@ void ProcessModel::setScript(const QString& script)
       {
         auto p = new Process::Port{get_next_id(), this};
         p->outlet = true;
-        p->propagate = true;
+        p->setPropagate(true);
         p->type = Process::PortType::Audio;
         p->setCustomData("Audio Out");
         setAudioOutputs(2);
