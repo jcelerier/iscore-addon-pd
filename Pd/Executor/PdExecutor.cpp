@@ -363,7 +363,6 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
     auto mess = m_inmess[i].c_str();
     for(const auto& val : dat)
     {
-      qDebug() << val;
       val.apply(ossia_to_pd_value{mess});
     }
     dat.clear();
