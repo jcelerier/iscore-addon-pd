@@ -5,6 +5,7 @@
 #include <Process/Dataflow/Port.hpp>
 #include <QRegularExpression>
 #include <QFile>
+#include <score/tools/File.hpp>
 
 namespace Pd
 {
@@ -57,19 +58,19 @@ bool ProcessModel::midiOutput() const
 void ProcessModel::setAudioInputs(int audioInputs)
 {
   if (m_audioInputs == audioInputs)
-            return;
+    return;
 
-          m_audioInputs = audioInputs;
-          emit audioInputsChanged(m_audioInputs);
+  m_audioInputs = audioInputs;
+  emit audioInputsChanged(m_audioInputs);
 }
 
 void ProcessModel::setAudioOutputs(int audioOutputs)
 {
   if (m_audioOutputs == audioOutputs)
-            return;
+    return;
 
-          m_audioOutputs = audioOutputs;
-          emit audioOutputsChanged(m_audioOutputs);
+  m_audioOutputs = audioOutputs;
+  emit audioOutputsChanged(m_audioOutputs);
 }
 
 void ProcessModel::setMidiInput(bool midiInput)
@@ -101,7 +102,7 @@ void ProcessModel::setScript(const QString& script)
     delete p;
   m_outlets.clear();
 
-  m_script = script;
+  m_script = score::locateFilePath(script, score::IDocument::documentContext(*this));
   QFile f(m_script);
   if(f.open(QIODevice::ReadOnly))
   {

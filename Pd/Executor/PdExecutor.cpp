@@ -182,32 +182,32 @@ PdGraphNode::PdGraphNode(
   libpd_set_floathook([] (const char *recv, float f) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(f);
+      v->data = f;
     }
   });
   libpd_set_banghook([] (const char *recv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(ossia::impulse{});
+      v->data = ossia::impulse{};
     }
   });
   libpd_set_symbolhook([] (const char *recv, const char *sym) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(std::string(sym));
+      v->data = std::string(sym);
     }
   });
 
   libpd_set_listhook([] (const char *recv, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(libpd_list_wrapper{argv, argc}.to_list());
+      v->data = libpd_list_wrapper{argv, argc}.to_list();
     }
   });
   libpd_set_messagehook([] (const char *recv, const char *msg, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data.push_back(libpd_list_wrapper{argv, argc}.to_list());
+      v->data = libpd_list_wrapper{argv, argc}.to_list();
     }
   });
 
@@ -361,11 +361,7 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
     auto& dat = m_inlets[m_firstInMessage + i]->data.target<ossia::value_port>()->data;
 
     auto mess = m_inmess[i].c_str();
-    for(const auto& val : dat)
-    {
-      val.apply(ossia_to_pd_value{mess});
-    }
-    dat.clear();
+    dat.apply(ossia_to_pd_value{mess});
   }
 
   // Compute number of samples to process
