@@ -59,8 +59,8 @@ PdGraphNode::PdGraphNode(
     const Engine::Execution::Context& ctx,
     std::size_t audio_inputs,
     std::size_t audio_outputs,
-    std::vector<Process::Port*> inport,
-    std::vector<Process::Port*> outport,
+    Process::Inlets inport,
+    Process::Outlets outport,
     bool midi_in, bool midi_out)
   : m_audioIns{audio_inputs}
   , m_audioOuts{audio_outputs}
@@ -182,32 +182,32 @@ PdGraphNode::PdGraphNode(
   libpd_set_floathook([] (const char *recv, float f) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data = f;
+      v->add_value(f);
     }
   });
   libpd_set_banghook([] (const char *recv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data = ossia::impulse{};
+      v->add_value(ossia::impulse{});
     }
   });
   libpd_set_symbolhook([] (const char *recv, const char *sym) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data = std::string(sym);
+      v->add_value(std::string(sym));
     }
   });
 
   libpd_set_listhook([] (const char *recv, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data = libpd_list_wrapper{argv, argc}.to_list();
+      v->add_value(libpd_list_wrapper{argv, argc}.to_list());
     }
   });
   libpd_set_messagehook([] (const char *recv, const char *msg, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->data = libpd_list_wrapper{argv, argc}.to_list();
+      v->add_value(libpd_list_wrapper{argv, argc}.to_list());
     }
   });
 
@@ -358,10 +358,14 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
   // Copy message inputs
   for(std::size_t i = 0; i < m_inmess.size(); ++i)
   {
-    auto& dat = m_inlets[m_firstInMessage + i]->data.target<ossia::value_port>()->data;
+    auto& dat = m_inlets[m_firstInMessage + i]->data.target<ossia::value_port>()->get_data();
 
     auto mess = m_inmess[i].c_str();
-    dat.apply(ossia_to_pd_value{mess});
+
+    for(auto& val : dat)
+    {
+      val.value.apply(ossia_to_pd_value{mess});
+    }
   }
 
   // Compute number of samples to process
@@ -437,19 +441,18 @@ class pd_process final : public ossia::node_process
 {
 public:
   using ossia::node_process::node_process;
-  void start(ossia::state& st) override
+  void start() override
   {
   }
 };
 
 Component::Component(
-    ::Engine::Execution::IntervalComponent& parentInterval,
     Pd::ProcessModel& element,
     const ::Engine::Execution::Context& ctx,
     const Id<score::Component>& id,
     QObject* parent):
   DataflowProcessComponent{
-      parentInterval, element, ctx, id, "PdComponent", parent}
+      element, ctx, id, "PdComponent", parent}
 {
   QFileInfo f(element.script());
   if(!f.exists())
@@ -458,8 +461,8 @@ Component::Component(
     return;
   }
 
-  const std::vector<Process::Port*>& model_inlets = element.inlets();
-  const std::vector<Process::Port*>& model_outlets = element.outlets();
+  const auto& model_inlets = element.inlets();
+  const auto& model_outlets = element.outlets();
 
   std::vector<std::string> in_mess, out_mess;
   for(std::size_t i = 0; i < model_inlets.size(); i++)

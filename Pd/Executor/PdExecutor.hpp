@@ -33,8 +33,8 @@ public:
       const Engine::Execution::Context& ctx,
       std::size_t audio_inputs,
       std::size_t audio_outputs,
-      std::vector<Process::Port*> inmess,
-      std::vector<Process::Port*> outmess,
+      Process::Inlets inmess,
+      Process::Outlets outmess,
       bool midi_in = true,
       bool midi_out = true
       );
@@ -111,7 +111,6 @@ class Component final :
     public:
         using model_type = Pd::ProcessModel;
         Component(
-                Engine::Execution::IntervalComponent& parentInterval,
                 Pd::ProcessModel& element,
                 const Engine::Execution::Context& ctx,
                 const Id<score::Component>& id,

@@ -48,8 +48,8 @@ class ProcessModel final : public Process::ProcessModel
 
     ~ProcessModel() override;
 
-    std::vector<Process::Port*> inlets() const override;
-    std::vector<Process::Port*> outlets() const override;
+    Process::Inlets inlets() const override;
+    Process::Outlets outlets() const override;
 
     int audioInputs() const;
     int audioOutputs() const;
@@ -70,8 +70,8 @@ class ProcessModel final : public Process::ProcessModel
     void midiOutputChanged(bool midiOutput);
 
   private:
-    std::vector<Process::Port*> m_inlets;
-    std::vector<Process::Port*> m_outlets;
+    Process::Inlets m_inlets;
+    Process::Outlets m_outlets;
     QString m_script;
     int m_audioInputs{0};
     int m_audioOutputs{0};

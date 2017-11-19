@@ -32,8 +32,8 @@ ProcessModel::~ProcessModel()
 {
 }
 
-std::vector<Process::Port*> ProcessModel::inlets() const { return m_inlets; }
-std::vector<Process::Port*> ProcessModel::outlets() const { return m_outlets; }
+Process::Inlets ProcessModel::inlets() const { return m_inlets; }
+Process::Outlets ProcessModel::outlets() const { return m_outlets; }
 
 int ProcessModel::audioInputs() const
 {
@@ -118,8 +118,7 @@ void ProcessModel::setScript(const QString& script)
       auto m = adc_regex.match(patch);
       if(m.hasMatch())
       {
-        auto p = new Process::Port{get_next_id(), this};
-        p->outlet = false;
+        auto p = new Process::Inlet{get_next_id(), this};
         p->type = Process::PortType::Audio;
         p->setCustomData("Audio In");
         setAudioInputs(2);
@@ -132,8 +131,7 @@ void ProcessModel::setScript(const QString& script)
       auto m = dac_regex.match(patch);
       if(m.hasMatch())
       {
-        auto p = new Process::Port{get_next_id(), this};
-        p->outlet = true;
+        auto p = new Process::Outlet{get_next_id(), this};
         p->setPropagate(true);
         p->type = Process::PortType::Audio;
         p->setCustomData("Audio Out");
@@ -147,8 +145,7 @@ void ProcessModel::setScript(const QString& script)
       auto m = midi_regex.match(patch);
       if(m.hasMatch())
       {
-        auto p = new Process::Port{get_next_id(), this};
-        p->outlet = false;
+        auto p = new Process::Inlet{get_next_id(), this};
         p->type = Process::PortType::Midi;
         p->setCustomData("Midi In");
         m_inlets.push_back(p);
@@ -162,8 +159,7 @@ void ProcessModel::setScript(const QString& script)
       auto m = midi_regex.match(patch);
       if(m.hasMatch())
       {
-        auto p = new Process::Port{get_next_id(), this};
-        p->outlet = true;
+        auto p = new Process::Outlet{get_next_id(), this};
         p->type = Process::PortType::Midi;
         p->setCustomData("Midi Out");
         m_outlets.push_back(p);
@@ -182,8 +178,7 @@ void ProcessModel::setScript(const QString& script)
         {
           auto var = m.capturedTexts()[1];
 
-          auto p = new Process::Port{get_next_id(), this};
-          p->outlet = false;
+          auto p = new Process::Inlet{get_next_id(), this};
           p->type = Process::PortType::Message;
           p->setCustomData(var);
           m_inlets.push_back(p);
@@ -201,8 +196,7 @@ void ProcessModel::setScript(const QString& script)
         {
           auto var = m.capturedTexts()[1];
 
-          auto p = new Process::Port{get_next_id(), this};
-          p->outlet = true;
+          auto p = new Process::Outlet{get_next_id(), this};
           p->type = Process::PortType::Message;
           p->setCustomData(var);
           m_outlets.push_back(p);
@@ -225,12 +219,14 @@ template <>
 void DataStreamReader::read(const Pd::ProcessModel& proc)
 {
   insertDelimiter();
+
   m_stream << (int32_t)proc.m_inlets.size();
   for(auto v : proc.m_inlets)
     m_stream << *v;
   m_stream << (int32_t)proc.m_outlets.size();
   for(auto v : proc.m_outlets)
     m_stream << *v;
+
   m_stream << proc.m_script
            << proc.m_audioInputs
            << proc.m_audioOutputs
@@ -244,18 +240,19 @@ template <>
 void DataStreamWriter::write(Pd::ProcessModel& proc)
 {
   checkDelimiter();
+
   {
     int32_t ports;
     m_stream >> ports;
     for(auto i = ports; i-->0;) {
-      proc.m_inlets.push_back(new Process::Port{*this, &proc});
+      proc.m_inlets.push_back(new Process::Inlet{*this, &proc});
     }
   }
   {
     int32_t ports;
     m_stream >> ports;
     for(auto i = ports; i-->0;) {
-      proc.m_outlets.push_back(new Process::Port{*this, &proc});
+      proc.m_outlets.push_back(new Process::Outlet{*this, &proc});
     }
   }
 
