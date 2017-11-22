@@ -1,7 +1,6 @@
 #pragma once
 #include <Pd/PdProcess.hpp>
 #include <Pd/Commands/EditPd.hpp>
-#include <Dataflow/Inspector/DataflowWidget.hpp>
 #include <Process/Inspector/ProcessInspectorWidgetDelegate.hpp>
 #include <Process/Inspector/ProcessInspectorWidgetDelegateFactory.hpp>
 #include <score/command/Dispatchers/CommandDispatcher.hpp>

@@ -8,7 +8,8 @@
 #include <score_addon_pd_commands_files.hpp>
 
 #include <Scenario/score_plugin_scenario.hpp>
-#include <Pd/UI/PdNode.hpp>
+
+#include <Pd/UI/TestNode.hpp>
 #include <score_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -35,10 +36,10 @@ std::vector<std::unique_ptr<score::InterfaceBase>> score_addon_pd::factories(
 {
     return instantiate_factories<
             score::ApplicationContext,
-         FW<Process::ProcessModelFactory, Pd::ProcessFactory>
-        , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>
-        , FW<Process::LayerFactory, Pd::LayerFactory>
-        , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory>
+         FW<Process::ProcessModelFactory, Pd::ProcessFactory, Pd::evurithin::process_factory>
+        , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory, Pd::evurithin::inspector_factory>
+        , FW<Process::LayerFactory, Pd::LayerFactory,Pd::evurithin::layer_factory>
+        , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory, Pd::evurithin::executor_factory>
     >(ctx, key);
 }
 
