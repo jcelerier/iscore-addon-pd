@@ -1,5 +1,25 @@
 #include "PdNode.hpp"
 #define make_uuid(text) score::uuids::string_generator::compute((text))
+
+namespace Process
+{
+
+
+void test()
+{
+  constexpr NodeBuilder<> n;
+  constexpr auto res =
+  n.audio_ins({{"foo"}, {"bar"}})
+   .audio_outs({{"mimi"}});
+
+  static_assert(get_ports<AudioInInfo>(res.build()).size() == 2);
+  static_assert(get_ports<AudioOutInfo>(res.build()).size() == 1);
+  static_assert(get_ports<AudioInInfo>(res.build())[0].name[0] == 'f');
+  static_assert(get_ports<AudioInInfo>(res.build())[1].name[0] == 'b');
+  static_assert(get_ports<AudioOutInfo>(res.build())[0].name[0] == 'm');
+}
+}
+
 namespace Pd
 {
 
@@ -11,26 +31,25 @@ struct SomeInfo
   static const constexpr auto Executor_uuid = make_uuid("7f655416-17ce-4ddd-aaad-3bb7476f03ab");
   static const constexpr auto Inspector_uuid = make_uuid("74950a6c-8d82-4441-857d-14dac005cade");
 
-  static const constexpr auto info = [] {
-    using namespace Process;
-    return make_ninfo(
-        audio_ins(AudioInInfo{"audio1"}, AudioInInfo{"audio2"}),
-        midi_ins(),
-        midi_outs(MidiOutInfo{"midi1"}),
-        value_ins(),
-        value_outs(),
-        control_ins(ControlInfo{"foo", Slider, 1.0, 10., 5.})
-        );
-  }();
+  static const constexpr auto info =
+    Process::create_node()
+      .audio_ins({{"audio1"}, {"audio2"}})
+      .midi_ins()
+      .midi_outs({{"midi1"}})
+      .value_ins()
+      .value_outs()
+      .controls({{"foo", Process::Slider, 1.0, 10., 5.}})
+      .build();
 
 
   static void fun(
-      const ossia::audio_port& p1, const ossia::audio_port& p2, const ossia::value_port& o1,
+      const ossia::audio_port& p1,
+      const ossia::audio_port& p2,
+      const ossia::value_port& o1,
       ossia::midi_port& p,
       ossia::token_request tk,
       ossia::execution_state& st)
   {
-    std::cerr << "coucou " << o1.get_data().back().value << std::endl;
   }
 };
 

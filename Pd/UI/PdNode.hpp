@@ -169,49 +169,92 @@ struct NodeInfo: Args...
 };
 
 template<typename... Args>
-static constexpr auto make_ninfo(Args&&... args)
+static constexpr auto make_node(Args&&... args)
 {
   return NodeInfo<Args...>{std::forward<Args>(args)...};
 }
 
-template<typename... Args>
-static constexpr auto audio_ins(Args&&... args)
+template<std::size_t N>
+using AudioIns = std::array<AudioInInfo, N>;
+template<std::size_t N>
+using AudioOuts = std::array<AudioOutInfo, N>;
+template<std::size_t N>
+using MidiIns = std::array<MidiInInfo, N>;
+template<std::size_t N>
+using MidiOuts = std::array<MidiOutInfo, N>;
+template<std::size_t N>
+using ValueIns = std::array<ValueInInfo, N>;
+template<std::size_t N>
+using ValueOuts = std::array<ValueOutInfo, N>;
+template<std::size_t N>
+using Controls = std::array<ControlInfo, N>;
+
+namespace detail {
+template <class T, std::size_t N, std::size_t... I>
+constexpr std::array<std::remove_cv_t<T>, N>
+    to_array_impl(T (&a)[N], std::index_sequence<I...>)
 {
-  return std::array<AudioInInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
+    return { {a[I]...} };
 }
-template<typename... Args>
-static constexpr auto audio_outs(Args&&... args)
-{
-  return std::array<AudioOutInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
 }
 
-template<typename... Args>
-static constexpr auto midi_ins(Args&&... args)
+template <class T, std::size_t N>
+constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N])
 {
-  return std::array<MidiInInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
-}
-template<typename... Args>
-static constexpr auto midi_outs(Args&&... args)
-{
-  return std::array<MidiOutInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
+    return detail::to_array_impl(a, std::make_index_sequence<N>{});
 }
 
-template<typename... Args>
-static constexpr auto value_ins(Args&&... args)
-{
-  return std::array<ValueInInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
-}
-template<typename... Args>
-static constexpr auto value_outs(Args&&... args)
-{
-  return std::array<ValueOutInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
-}
 
 template<typename... Args>
-static constexpr auto control_ins(Args&&... args)
+struct NodeBuilder: Args...
 {
-  return std::array<ControlInfo, sizeof...(Args)>{{std::forward<Args>(args)...}};
+  constexpr auto audio_ins() const { return *this; }
+  constexpr auto audio_outs() const { return *this; }
+  constexpr auto midi_ins() const { return *this; }
+  constexpr auto midi_outs() const { return *this; }
+  constexpr auto value_ins() const { return *this; }
+  constexpr auto value_outs() const { return *this; }
+  constexpr auto controls() const { return *this; }
+
+  template<std::size_t N>
+  constexpr auto audio_ins(const AudioInInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<AudioInInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+  template<std::size_t N>
+  constexpr auto audio_outs(const AudioOutInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<AudioOutInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+
+  template<std::size_t N>
+  constexpr auto midi_ins(const MidiInInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<MidiInInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+  template<std::size_t N>
+  constexpr auto midi_outs(const MidiOutInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<MidiOutInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+
+  template<std::size_t N>
+  constexpr auto value_ins(const ValueInInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<ValueInInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+  template<std::size_t N>
+  constexpr auto value_outs(const ValueOutInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<ValueOutInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+  template<std::size_t N>
+  constexpr auto controls(const ControlInfo (&arg)[N]) const {
+    return NodeBuilder<std::array<ControlInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  }
+  constexpr auto build() const {
+    return NodeInfo<Args...>{static_cast<Args>(*this)...};
+  }
+};
+
+constexpr auto create_node() {
+  return NodeBuilder<>{};
 }
+
 
 template<typename T, typename...>
 struct is_port : std::false_type {};
