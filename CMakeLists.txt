@@ -25,6 +25,8 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorWidget.hpp"
 
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/TestNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/MidiUtil.hpp"
 
   "${CMAKE_CURRENT_SOURCE_DIR}/score_addon_pd.hpp"
 

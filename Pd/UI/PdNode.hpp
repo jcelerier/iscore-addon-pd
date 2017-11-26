@@ -24,14 +24,20 @@
 
 #include <Engine/score2OSSIA.hpp>
 #include <score/widgets/DoubleSlider.hpp>
+#include <score/widgets/SignalUtils.hpp>
 #include <score/widgets/MarginLess.hpp>
 #include <score/widgets/TextLabel.hpp>
 #include <ossia/dataflow/graph.hpp>
 #include <ossia/dataflow/node_process.hpp>
 #include <ossia/network/domain/domain.hpp>
 #include <brigand/algorithms.hpp>
+#include <frozen/set.h>
+#include <QCheckBox>
 #include <QFormLayout>
+#include <QLineEdit>
 #include <type_traits>
+#include <variant>
+#define make_uuid(text) score::uuids::string_generator::compute((text))
 
 namespace Pd
 {
@@ -106,59 +112,323 @@ private:
 
 namespace Process {
 
-struct AudioInInfo {
 
-  QLatin1String name;
+template<typename T>
+using timed_vec = std::vector<std::pair<ossia::time_value, T>>;
+
+struct AudioInInfo {
+  const QLatin1String name;
+
   template<std::size_t N>
   constexpr AudioInInfo(const char (&name)[N]): name{name, N} { }
 };
 struct AudioOutInfo {
+  const QLatin1String name;
 
-  QLatin1String name;
   template<std::size_t N>
   constexpr AudioOutInfo(const char (&name)[N]): name{name, N} { }
 };
 struct ValueInInfo {
+  const QLatin1String name;
 
-  QLatin1String name;
   template<std::size_t N>
   constexpr ValueInInfo(const char (&name)[N]): name{name, N} { }
 };
 struct ValueOutInfo {
+  const QLatin1String name;
 
-  QLatin1String name;
   template<std::size_t N>
   constexpr ValueOutInfo(const char (&name)[N]): name{name, N} { }
 };
 struct MidiInInfo {
+  const QLatin1String name;
 
-  QLatin1String name;
   template<std::size_t N>
   constexpr MidiInInfo(const char (&name)[N]): name{name, N} { }
 };
 struct MidiOutInfo {
+  const QLatin1String name;
 
-  QLatin1String name;
   template<std::size_t N>
   constexpr MidiOutInfo(const char (&name)[N]): name{name, N} { }
 };
 
-enum ControlType: int8_t { Slider };
+
 struct ControlInfo {
-  QLatin1String name;
-  ControlType type;
-  double min;
-  double max;
-  double init;
+  const QLatin1String name;
 
   template<std::size_t N, typename... Args>
-  constexpr ControlInfo(const char (&name)[N], ControlType t, double min, double max, double init)://:
+  constexpr ControlInfo(const char (&name)[N]):
     name{name, N}
-  , type{t}
-  , min{min}
-  , max{max}
-  , init{init}
   {
+  }
+};
+
+struct FloatSlider : ControlInfo
+{
+  using type = float;
+  const float min{};
+  const float max{};
+  const float init{};
+
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(init);
+    p->setDomain(ossia::make_domain(min, max));
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new score::DoubleSlider{parent};
+    sl->setOrientation(Qt::Horizontal);
+
+    QObject::connect(sl, &score::DoubleSlider::valueChanged,
+            parent, [*this,&inlet,&m_dispatcher] (double val) {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, min + val * (max - min));
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [*this,sl] (ossia::value val) {
+      sl->setValue((ossia::convert<double>(val) - min) / (max - min));
+    });
+
+    return sl;
+  }
+};
+struct IntSlider: ControlInfo
+{
+  using type = int;
+  const int min{};
+  const int max{};
+  const int init{};
+
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(init);
+    p->setDomain(ossia::make_domain(min, max));
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new QSlider{parent};
+    sl->setOrientation(Qt::Horizontal);
+    sl->setRange(min, max);
+    sl->setValue(init);
+
+    QObject::connect(sl, &QSlider::valueChanged,
+            parent, [&inlet,&m_dispatcher] (int val) {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, val);
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [sl] (ossia::value val) {
+      sl->setValue(ossia::convert<int>(val));
+    });
+
+    return sl;
+  }
+};
+struct IntSpinBox: ControlInfo
+{
+  using type = int;
+  const int min{};
+  const int max{};
+  const int init{};
+
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(init);
+    p->setDomain(ossia::make_domain(min, max));
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new QSpinBox{parent};
+    sl->setRange(min, max);
+    sl->setValue(init);
+
+    QObject::connect(sl, SignalUtils::QSpinBox_valueChanged_int(),
+            parent, [&inlet,&m_dispatcher] (int val) {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, val);
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [sl] (ossia::value val) {
+      sl->setValue(ossia::convert<int>(val));
+    });
+
+    return sl;
+  }
+};
+struct Toggle: ControlInfo
+{
+  using type = bool;
+  const bool init{};
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(init);
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new QCheckBox{parent};
+    sl->setChecked(init);
+
+    QObject::connect(sl, &QCheckBox::toggled,
+            parent, [&inlet,&m_dispatcher] (bool val) {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, val);
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [sl] (ossia::value val) {
+      sl->setChecked(ossia::convert<bool>(val));
+    });
+
+    return sl;
+  }
+};
+struct LineEdit: ControlInfo
+{
+  using type = std::string;
+  const QLatin1Literal init{};
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(std::string(init.latin1(), init.size()));
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new QLineEdit{parent};
+    sl->setText(init);
+
+    QObject::connect(sl, &QLineEdit::editingFinished,
+            parent, [sl,&inlet,&m_dispatcher] () {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, sl->text().toStdString());
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [sl] (ossia::value val) {
+      sl->setText(QString::fromStdString(ossia::convert<std::string>(val)));
+    });
+
+    return sl;
+  }
+};
+struct RGBAEdit: ControlInfo
+{
+  using type = std::array<float, 4>;
+  std::array<float, 4> init{};
+};
+struct XYZEdit: ControlInfo
+{
+  using type = std::array<float, 3>;
+  std::array<float, 3> init{};
+};
+template<typename T, std::size_t N>
+struct ComboBox: ControlInfo
+{
+  using type = T;
+  const std::size_t init{};
+  const std::array<std::pair<QLatin1String, T>, N> values;
+
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(values[init].second);
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new QComboBox{parent};
+    for(auto& e : values)
+    {
+      sl->addItem(e.first);
+    }
+    sl->setCurrentIndex(init);
+
+    QObject::connect(sl, SignalUtils::QComboBox_currentIndexChanged_int(),
+            parent, [*this,&inlet,&m_dispatcher] (int idx) {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, values[idx].second);
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [*this,sl] (ossia::value val) {
+      auto v = ossia::convert<T>(val);
+      auto idx = ossia::find_if(values, [&] (const auto& pair) { return pair.second == v; });
+      if(idx != values.end())
+      {
+        sl->setCurrentIndex(std::distance(values.begin(), idx));
+      }
+    });
+
+    return sl;
+  }
+};
+
+template<std::size_t N>
+struct Enum: ControlInfo
+{
+  using type = std::string;
+  const std::size_t init{};
+  const std::array<const char*, N> values;
+
+  auto create_inlet(Id<Process::Port> id, QObject* parent) const
+  {
+    auto p = new Process::ControlInlet(id, parent);
+    p->type = Process::PortType::Message;
+    p->setValue(std::string(values[init]));
+    p->setCustomData(name);
+    return p;
+  }
+
+  auto make_widget(ControlInlet& inlet, CommandDispatcher<>& m_dispatcher, QWidget* parent) const
+  {
+    auto sl = new QComboBox{parent};
+    for(const auto& e : values)
+    {
+      sl->addItem(e);
+    }
+    sl->setCurrentIndex(init);
+
+    QObject::connect(sl, SignalUtils::QComboBox_currentIndexChanged_int(),
+            parent, [*this,&inlet,&m_dispatcher] (int idx) {
+      m_dispatcher.submitCommand<Pd::SetControlValue>(inlet, values[idx]);
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            parent, [*this,sl] (ossia::value val) {
+      auto v = QString::fromStdString(ossia::convert<std::string>(val));
+      auto idx = ossia::find(values, v);
+      if(idx != values.end())
+      {
+        sl->setCurrentIndex(std::distance(values.begin(), idx));
+      }
+    });
+
+    return sl;
   }
 };
 
@@ -242,9 +512,11 @@ struct NodeBuilder: Args...
   constexpr auto value_outs(const ValueOutInfo (&arg)[N]) const {
     return NodeBuilder<std::array<ValueOutInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
   }
-  template<std::size_t N>
-  constexpr auto controls(const ControlInfo (&arg)[N]) const {
-    return NodeBuilder<std::array<ControlInfo, N>, Args...>{to_array(arg), static_cast<Args>(*this)...};
+  template<typename... Controls>
+  constexpr auto controls(const Controls&&... ctrls) const {
+    return NodeBuilder<std::tuple<Controls...>, Args...>{
+        std::make_tuple(ctrls...), static_cast<Args>(*this)...
+    };
   }
   constexpr auto build() const {
     return NodeInfo<Args...>{static_cast<Args>(*this)...};
@@ -277,22 +549,45 @@ static constexpr auto get_ports(const T& t)
   }
 }
 
+template<typename T, typename...>
+struct is_controls : std::false_type {};
+template<typename T, typename... Args>
+struct is_controls <T, std::tuple<Args...>> : std::true_type {};
+
+template<typename T>
+static constexpr auto get_controls(const T& t)
+{
+  using index = brigand::index_if<typename T::types, is_controls<PortType, brigand::_1>>;
+
+  if constexpr(!std::is_same<index, brigand::no_such_type_>::value)
+  {
+    using tuple_type = brigand::at<typename T::types, index>;
+    return static_cast<const tuple_type&>(t);
+  }
+  else
+  {
+    return std::tuple<>{};
+  }
+
+}
+static constexpr bool same(QLatin1String s1, QLatin1String s2)
+{
+  if(s1.size() != s2.size())
+    return false;
+  for(int i = 0; i < s1.size(); i++)
+  {
+    if(s1[i] != s2[i])
+      return false;
+  }
+  return true;
+}
 template<typename Info>
 struct InfoFunctions
 {
 
-  static constexpr bool same(QLatin1String s1, QLatin1String s2)
-  {
-    if(s1.size() != s2.size())
-      return false;
-    for(int i = 0; i < s1.size(); i++)
-    {
-      if(s1[i] != s2[i])
-        return false;
-    }
-    return true;
-  }
 
+
+  /*
   template<std::size_t N>
   static constexpr std::size_t inlet(const char (&n)[N])
   {
@@ -351,96 +646,98 @@ struct InfoFunctions
 
     throw;
   }
+  */
 
-  static constexpr auto control_start()
-  {
-    constexpr auto audio_in = get_ports<AudioInInfo>(Info::info);
-    constexpr auto midi_in = get_ports<MidiInInfo>(Info::info);
-    constexpr auto value_in = get_ports<ValueInInfo>(Info::info);
-    constexpr auto control_in = get_ports<ControlInfo>(Info::info);
-    constexpr auto audio_size = audio_in.size();
-    constexpr auto midi_size = midi_in.size();
-    constexpr auto value_size = value_in.size();
+  static constexpr auto audio_in_count =
+      get_ports<AudioInInfo>(Info::info).size();
+  static constexpr auto audio_out_count =
+      get_ports<AudioOutInfo>(Info::info).size();
+  static constexpr auto midi_in_count =
+      get_ports<MidiInInfo>(Info::info).size();
+  static constexpr auto midi_out_count =
+      get_ports<MidiOutInfo>(Info::info).size();
+  static constexpr auto value_in_count =
+      get_ports<ValueInInfo>(Info::info).size();
+  static constexpr auto value_out_count =
+      get_ports<ValueOutInfo>(Info::info).size();
+  static constexpr auto control_count =
+      std::tuple_size<decltype(get_controls(Info::info))>::value;
 
-    return audio_size + midi_size + value_size;
-  }
 
-  static constexpr auto inlet_size()
-  {
-    constexpr auto audio_in = get_ports<AudioInInfo>(Info::info);
-    constexpr auto midi_in = get_ports<MidiInInfo>(Info::info);
-    constexpr auto value_in = get_ports<ValueInInfo>(Info::info);
-    constexpr auto control_in = get_ports<ControlInfo>(Info::info);
-    constexpr auto audio_size = audio_in.size();
-    constexpr auto midi_size = midi_in.size();
-    constexpr auto value_size = value_in.size();
-    constexpr auto control_size = control_in.size();
-    return audio_size + midi_size + value_size + control_size;
-  }
+  static constexpr auto control_start =
+      audio_in_count + midi_in_count + value_in_count;
+
+  static constexpr auto inlet_size =
+      audio_in_count + midi_in_count + value_in_count + control_count;
+
+  static constexpr auto outlet_size =
+      audio_out_count + midi_out_count + value_out_count;
 
   template<std::size_t N>
   static constexpr auto get_inlet_accessor()
   {
-    constexpr auto audio_in = get_ports<AudioInInfo>(Info::info);
-    constexpr auto midi_in = get_ports<MidiInInfo>(Info::info);
-    constexpr auto value_in = get_ports<ValueInInfo>(Info::info);
-    constexpr auto control_in = get_ports<ControlInfo>(Info::info);
-    constexpr auto audio_size = audio_in.size();
-    constexpr auto midi_size = midi_in.size();
-    constexpr auto value_size = value_in.size();
-    constexpr auto control_size = control_in.size();
-    if constexpr(N < audio_size)
-        return [] (const ossia::inlets& inl) { return *inl[N]->data.target<ossia::audio_port>(); };
-    else if constexpr(N < (audio_size + midi_size))
-        return [] (const ossia::inlets& inl) { return *inl[N]->data.target<ossia::midi_port>(); };
-    else if constexpr(N < (audio_size + midi_size + value_size + control_size))
-        return [] (const ossia::inlets& inl) { return *inl[N]->data.target<ossia::value_port>(); };
+    if constexpr(N < audio_in_count)
+        return [] (const ossia::inlets& inl) -> const ossia::audio_port& { return *inl[N]->data.target<ossia::audio_port>(); };
+    else if constexpr(N < (audio_in_count + midi_in_count))
+        return [] (const ossia::inlets& inl) -> const ossia::midi_port& { return *inl[N]->data.target<ossia::midi_port>(); };
+    else if constexpr(N < (audio_in_count + midi_in_count + value_in_count + control_count))
+        return [] (const ossia::inlets& inl) -> const ossia::value_port& { return *inl[N]->data.target<ossia::value_port>(); };
     else
         throw;
   }
-
-  static constexpr auto outlet_size()
+  template<std::size_t N>
+  static constexpr auto get_control_accessor()
   {
-    constexpr auto audio_out = get_ports<AudioOutInfo>(Info::info);
-    constexpr auto midi_out = get_ports<MidiOutInfo>(Info::info);
-    constexpr auto value_out = get_ports<ValueOutInfo>(Info::info);
-    constexpr auto audio_size = audio_out.size();
-    constexpr auto midi_size = midi_out.size();
-    constexpr auto value_size = value_out.size();
-    return audio_size + midi_size + value_size;
+    constexpr const auto idx = control_start + N;
+    static_assert(control_count > 0);
+    static_assert(N < control_count);
+
+    return [=] (const ossia::inlets& inl) {
+      constexpr const auto controls = get_controls(Info::info);
+      constexpr const auto control = std::get<N>(controls);
+      using val_type = typename decltype(control)::type;
+
+      timed_vec<val_type> vec;
+      const auto& vp = inl[idx]->data.template target<ossia::value_port>()->get_data();
+      vec.reserve(vp.size());
+      for(auto& v : vp)
+      {
+        vec.emplace_back(v.timestamp, ossia::convert<val_type>(v.value));
+      }
+      return vec;
+    };
   }
 
   template<std::size_t N>
   static constexpr auto get_outlet_accessor()
   {
-    constexpr auto audio_out = get_ports<AudioOutInfo>(Info::info);
-    constexpr auto midi_out = get_ports<MidiOutInfo>(Info::info);
-    constexpr auto value_out = get_ports<ValueOutInfo>(Info::info);
-    constexpr auto audio_size = audio_out.size();
-    constexpr auto midi_size = midi_out.size();
-    constexpr auto value_size = value_out.size();
-    if constexpr(N < audio_size)
-        return [] (const ossia::outlets& outl) { return *outl[N]->data.target<ossia::audio_port>(); };
-    else if constexpr(N < (audio_size + midi_size))
-        return [] (const ossia::outlets& outl) { return *outl[N]->data.target<ossia::midi_port>(); };
-    else if constexpr(N < (audio_size + midi_size + value_size))
-        return [] (const ossia::outlets& outl) { return *outl[N]->data.target<ossia::value_port>(); };
+    if constexpr(N < audio_out_count)
+        return [] (const ossia::outlets& inl) -> ossia::audio_port& { return *inl[N]->data.target<ossia::audio_port>(); };
+    else if constexpr(N < (audio_out_count + midi_out_count))
+        return [] (const ossia::outlets& inl) -> ossia::midi_port& { return *inl[N]->data.target<ossia::midi_port>(); };
+    else if constexpr(N < (audio_out_count + midi_out_count + value_out_count))
+        return [] (const ossia::outlets& inl) -> ossia::value_port& { return *inl[N]->data.target<ossia::value_port>(); };
     else
         throw;
   }
 
   template <class F, std::size_t... I>
-  static constexpr void apply_inlet_impl(const F& f, const ossia::inlets& t, const std::index_sequence<I...>& )
+  static constexpr void apply_inlet_impl(const F& f, const std::index_sequence<I...>& )
   {
-    f(get_inlet_accessor<I>()(t)...);
+    f(get_inlet_accessor<I>()...);
   }
 
   template <class F, std::size_t... I>
-  static constexpr void apply_outlet_impl(const F& f, const ossia::outlets& t, const std::index_sequence<I...>& )
+  static constexpr void apply_outlet_impl(const F& f, const std::index_sequence<I...>& )
   {
-    f(get_outlet_accessor<I>()(t)...);
+    f(get_outlet_accessor<I>()...);
   }
 
+  template <class F, std::size_t... I>
+  static constexpr void apply_control_impl(const F& f, const std::index_sequence<I...>& )
+  {
+    f(get_control_accessor<I>()...);
+  }
   template<typename F>
   static void run(
       const ossia::inlets& inlets,
@@ -449,18 +746,36 @@ struct InfoFunctions
       ossia::execution_state& st,
       const F& f)
   {
-    using inlets_indices = std::make_index_sequence<inlet_size()>;
-    using outlets_indices = std::make_index_sequence<outlet_size()>;
+    using inlets_indices = std::make_index_sequence<audio_in_count + midi_in_count + value_in_count>;
+    using controls_indices = std::make_index_sequence<control_count>;
+    using outlets_indices = std::make_index_sequence<outlet_size>;
 
-    // from this, create tuples of functions
-    // apply the functions to inlets and outlets
-    apply_inlet_impl(
-          [&] (auto&&... i) {
-      apply_outlet_impl(
-            [&] (auto&&... o) {
-        return f(i..., o..., tk, st);
-      }, outlets, outlets_indices{});
-    }, inlets, inlets_indices{});
+    if constexpr(control_count > 0) {
+      auto control_span = gsl::span(&inlets[control_start], control_count);
+      // from this, create tuples of functions
+      // apply the functions to inlets and outlets
+      apply_inlet_impl(
+            [&] (auto&&... i) {
+        apply_control_impl(
+              [&] (auto&&... c) {
+          apply_outlet_impl(
+                [&] (auto&&... o) {
+            f(i(inlets)..., c(inlets)..., o(outlets)..., tk, st);
+          }, outlets_indices{});
+        }, controls_indices{});
+      }, inlets_indices{});
+    }
+    else
+    {
+      apply_inlet_impl(
+            [&] (auto&&... i) {
+        apply_outlet_impl(
+              [&] (auto&&... o) {
+          f(i(inlets)..., o(outlets)..., tk, st);
+        }, outlets_indices{});
+      }, inlets_indices{});
+
+    }
   }
 };
 
@@ -490,18 +805,18 @@ class ControlProcess final: public Process::ProcessModel
   const Process::Inlets& inlets_ref() const { return m_inlets; }
   const Process::Outlets& outlets_ref() const { return m_outlets; }
 
-  ossia::value control(int i)
+  ossia::value control(std::size_t i)
   {
-    static_assert(get_ports<ControlInfo>(Info::info).size() != 0);
-    constexpr int start = InfoFunctions<Info>::control_start();
+    static_assert(InfoFunctions<Info>::control_count != 0);
+    constexpr auto start = InfoFunctions<Info>::control_start;
 
     return static_cast<ControlInlet*>(m_inlets[start + i])->value();
   }
 
-  void setControl(int i, ossia::value v)
+  void setControl(std::size_t i, ossia::value v)
   {
-    static_assert(get_ports<ControlInfo>(Info::info).size() != 0);
-    constexpr int start = InfoFunctions<Info>::control_start();
+    static_assert(InfoFunctions<Info>::control_count != 0);
+    constexpr auto start = InfoFunctions<Info>::control_start;
 
     static_cast<ControlInlet*>(m_inlets[start + i])->setValue(std::move(v));
   }
@@ -532,19 +847,17 @@ class ControlProcess final: public Process::ProcessModel
     for(const auto& in : get_ports<ValueInInfo>(Info::info))
     {
       auto p = new Process::Inlet(Id<Process::Port>(inlet++), this);
-      p->type = Process::PortType::Midi;
+      p->type = Process::PortType::Message;
       p->setCustomData(in.name);
       m_inlets.push_back(p);
     }
-    for(const auto& in : get_ports<ControlInfo>(Info::info))
-    {
-      auto p = new Process::ControlInlet(Id<Process::Port>(inlet++), this);
-      p->type = Process::PortType::Midi;
-      p->setDomain(ossia::make_domain(in.min, in.max));
-      p->setCustomData(in.name);
-      m_inlets.push_back(p);
-    }
-
+    ossia::for_each_in_tuple(get_controls(Info::info),
+                             [&] (const auto& ctrl) {
+      if(auto p = ctrl.create_inlet(Id<Process::Port>(inlet++), this))
+      {
+        m_inlets.push_back(p);
+      }
+    });
 
     int outlet = 0;
     for(const auto& out : get_ports<AudioOutInfo>(Info::info))
@@ -566,7 +879,7 @@ class ControlProcess final: public Process::ProcessModel
     for(const auto& out : get_ports<ValueOutInfo>(Info::info))
     {
       auto p = new Process::Outlet(Id<Process::Port>(outlet++), this);
-      p->type = Process::PortType::Midi;
+      p->type = Process::PortType::Message;
       p->setCustomData(out.name);
       m_outlets.push_back(p);
     }
@@ -611,35 +924,37 @@ template<typename Info>
 class ControlNode : public ossia::graph_node
 {
 public:
-  std::array<ossia::value, get_ports<ControlInfo>(Info::info).size()> controls;
+  std::array<ossia::value, InfoFunctions<Info>::control_count> controls;
   ControlNode()
   {
-    for(const auto& in : get_ports<AudioInInfo>(Info::info))
+    m_inlets.reserve(InfoFunctions<Info>::inlet_size);
+    m_outlets.reserve(InfoFunctions<Info>::outlet_size);
+    for(std::size_t i = 0; i < InfoFunctions<Info>::audio_in_count; i++)
     {
       m_inlets.push_back(ossia::make_inlet<ossia::audio_port>());
     }
-    for(const auto& in : get_ports<MidiInInfo>(Info::info))
+    for(std::size_t i = 0; i < InfoFunctions<Info>::midi_in_count; i++)
     {
       m_inlets.push_back(ossia::make_inlet<ossia::midi_port>());
     }
-    for(const auto& in : get_ports<ValueInInfo>(Info::info))
+    for(std::size_t i = 0; i < InfoFunctions<Info>::value_in_count; i++)
     {
       m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
     }
-    for(const auto& in : get_ports<ControlInfo>(Info::info))
+    for(std::size_t i = 0; i < InfoFunctions<Info>::control_count; i++)
     {
       m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
     }
 
-    for(const auto& out : get_ports<AudioOutInfo>(Info::info))
+    for(std::size_t i = 0; i < InfoFunctions<Info>::audio_out_count; i++)
     {
       m_outlets.push_back(ossia::make_outlet<ossia::audio_port>());
     }
-    for(const auto& out : get_ports<MidiOutInfo>(Info::info))
+    for(std::size_t i = 0; i < InfoFunctions<Info>::midi_out_count; i++)
     {
       m_outlets.push_back(ossia::make_outlet<ossia::midi_port>());
     }
-    for(const auto& out : get_ports<ValueOutInfo>(Info::info))
+    for(std::size_t i = 0; i < InfoFunctions<Info>::value_out_count; i++)
     {
       m_outlets.push_back(ossia::make_outlet<ossia::value_port>());
     }
@@ -647,15 +962,19 @@ public:
 
   void run(ossia::token_request tk, ossia::execution_state& st) override
   {
-    constexpr int start = InfoFunctions<Info>::control_start();
-    for(int i = 0; i < get_ports<ControlInfo>(Info::info).size(); i++)
+    constexpr auto start = InfoFunctions<Info>::control_start;
+    for(std::size_t i = 0; i < InfoFunctions<Info>::control_count; i++)
     {
       ossia::inlet& inlet = *m_inlets[start + i];
       auto& port = *inlet.data.target<ossia::value_port>();
       if(port.get_data().empty())
+      {
         port.add_value(controls[i]);
+      }
       else
+      {
         controls[i] = port.get_data().back().value;
+      }
     }
     InfoFunctions<Info>::run(this->inputs(), this->outputs(), tk, st, Info::fun);
   }
@@ -683,7 +1002,7 @@ class Executor: public Engine::Execution::
       this->m_ossia_process = proc;
       const auto& dl = ctx.devices.list();
 
-      for(int i = 0; i < InfoFunctions<Info>::inlet_size(); i++)
+      for(std::size_t i = 0; i < InfoFunctions<Info>::inlet_size; i++)
       {
         auto dest = Engine::score_to_ossia::makeDestination(dl, element.inlets_ref()[i]->address());
         if(dest)
@@ -691,8 +1010,14 @@ class Executor: public Engine::Execution::
           node->inputs()[i]->address = &dest->address();
         }
       }
+      constexpr const auto control_start = InfoFunctions<Info>::control_start;
+      for(std::size_t i = 0; i < InfoFunctions<Info>::control_count; i++)
+      {
+        node->controls[i] = element.control(i);
+      }
 
-      for(int i = 0; i < InfoFunctions<Info>::outlet_size(); i++)
+
+      for(std::size_t i = 0; i < InfoFunctions<Info>::outlet_size; i++)
       {
         auto dest = Engine::score_to_ossia::makeDestination(dl, element.outlets_ref()[i]->address());
         if(dest)
@@ -702,22 +1027,21 @@ class Executor: public Engine::Execution::
       }
 
 
-      int i = 0;
-      for(const ControlInfo& in : get_ports<ControlInfo>(Info::info))
+      for(std::size_t idx = InfoFunctions<Info>::control_start;
+          idx < InfoFunctions<Info>::control_start + InfoFunctions<Info>::control_count;
+          idx++)
       {
-        constexpr int start = InfoFunctions<Info>::control_start();
-        auto inlet = static_cast<ControlInlet*>(element.inlets_ref()[start + i]);
+        auto inlet = static_cast<ControlInlet*>(element.inlets_ref()[idx]);
+        auto port = node->inputs()[idx]->data.template target<ossia::value_port>();
 
         QObject::connect(inlet, &ControlInlet::valueChanged,
                 this, [=] (ossia::value val) {
           this->system().executionQueue.enqueue(
-                [node,val,start,i]
+                [port, val]
           {
-            node->inputs()[start + i]->data.template target<ossia::value_port>()->add_value(val);
+            port->add_value(std::move(val));
           });
         });
-
-        i++;
       }
 
       ctx.plugin.register_node(element, node);
@@ -804,29 +1128,21 @@ public:
       vlay->setMargin(2);
       vlay->setContentsMargins(0, 0, 0, 0);
 
-      int i = 0;
-      for(const ControlInfo& in : get_ports<ControlInfo>(Info::info))
-      {
-        constexpr int start = InfoFunctions<Info>::control_start();
+      std::size_t i = 0;
+      constexpr auto start = InfoFunctions<Info>::control_start;
+      ossia::for_each_in_tuple(
+            get_controls(Info::info),
+            [&] (const auto& ctrl) {
         auto inlet = static_cast<ControlInlet*>(object.inlets_ref()[start + i]);
 
-        auto lab = new TextLabel{in.name, this};
-        auto sl = new score::DoubleSlider{this};
+        auto lab = new TextLabel{ctrl.name, this};
         vlay->addWidget(lab);
-        vlay->addWidget(sl);
 
-        QObject::connect(sl, &score::DoubleSlider::valueChanged,
-                this, [=] (double val) {
-          m_dispatcher.submitCommand<Pd::SetControlValue>(*inlet, in.min + val * (in.max - in.min));
-        });
-
-        QObject::connect(inlet, &ControlInlet::valueChanged,
-                this, [=] (ossia::value val) {
-          sl->setValue((ossia::convert<double>(val) - in.min) / (in.max - in.min));
-        });
+        auto widg = ctrl.make_widget(*inlet, m_dispatcher, this);
+        vlay->addWidget(widg);
 
         i++;
-      }
+      });
 
       vlay->addStretch();
     }

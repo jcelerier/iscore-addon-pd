@@ -38,14 +38,14 @@ struct SomeInfo
       .midi_outs({{"midi1"}})
       .value_ins()
       .value_outs()
-      .controls({{"foo", Process::Slider, 1.0, 10., 5.}})
+      .controls(Process::FloatSlider{"foo", .0, 10., 5.})
       .build();
 
 
   static void fun(
       const ossia::audio_port& p1,
       const ossia::audio_port& p2,
-      const ossia::value_port& o1,
+      const Process::timed_vec<float>& o1,
       ossia::midi_port& p,
       ossia::token_request tk,
       ossia::execution_state& st)
@@ -53,7 +53,7 @@ struct SomeInfo
   }
 };
 
-struct evurithin
+struct test_gen
 {
     using process = Process::ControlProcess<SomeInfo>;
     using process_factory = Process::GenericProcessModelFactory<process>;

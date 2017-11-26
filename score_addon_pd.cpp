@@ -10,6 +10,7 @@
 #include <Scenario/score_plugin_scenario.hpp>
 
 #include <Pd/UI/TestNode.hpp>
+#include <Pd/UI/MidiUtil.hpp>
 #include <score_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -36,10 +37,10 @@ std::vector<std::unique_ptr<score::InterfaceBase>> score_addon_pd::factories(
 {
     return instantiate_factories<
             score::ApplicationContext,
-         FW<Process::ProcessModelFactory, Pd::ProcessFactory, Pd::evurithin::process_factory>
-        , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory, Pd::evurithin::inspector_factory>
-        , FW<Process::LayerFactory, Pd::LayerFactory,Pd::evurithin::layer_factory>
-        , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory, Pd::evurithin::executor_factory>
+         FW<Process::ProcessModelFactory, Pd::ProcessFactory, Pd::test_gen::process_factory, Pd::MidiUtil::factories::process_factory>
+        , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory, Pd::test_gen::inspector_factory, Pd::MidiUtil::factories::inspector_factory>
+        , FW<Process::LayerFactory, Pd::LayerFactory,Pd::test_gen::layer_factory, Pd::MidiUtil::factories::layer_factory>
+        , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory, Pd::test_gen::executor_factory, Pd::MidiUtil::factories::executor_factory>
     >(ctx, key);
 }
 
