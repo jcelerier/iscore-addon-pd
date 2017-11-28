@@ -163,9 +163,13 @@ struct AudioOutInfo {
 };
 struct ValueInInfo {
   const QLatin1String name;
+  const bool is_event{};
 
   template<std::size_t N>
   constexpr ValueInInfo(const char (&name)[N]): name{name, N} { }
+
+  template<std::size_t N>
+  constexpr ValueInInfo(const char (&name)[N], bool b): name{name, N}, is_event{b} { }
 };
 struct ValueOutInfo {
   const QLatin1String name;
@@ -969,7 +973,9 @@ public:
   static const constexpr bool has_state = !std::is_same_v<state_type, dummy_t>;
 
   using controls_list = std::array<ossia::value, InfoFunctions<Info>::control_count>;
+  using controls_changed_list = std::bitset<InfoFunctions<Info>::control_count>;
   controls_list controls;
+  controls_changed_list controls_changed;
   moodycamel::ReaderWriterQueue<controls_list> cqueue;
   ControlNode()
   {
@@ -983,9 +989,13 @@ public:
     {
       m_inlets.push_back(ossia::make_inlet<ossia::midi_port>());
     }
+    constexpr const auto inlet_infos = get_ports<ValueInInfo>(Info::info);
     for(std::size_t i = 0; i < InfoFunctions<Info>::value_in_count; i++)
     {
-      m_inlets.push_back(ossia::make_inlet<ossia::value_port>());
+      auto inlt = ossia::make_inlet<ossia::value_port>();
+      if(inlet_infos[i].is_event)
+        inlt->data.target<ossia::value_port>()->is_event = true;
+      m_inlets.push_back(std::move(inlt));
     }
     for(std::size_t i = 0; i < InfoFunctions<Info>::control_count; i++)
     {
@@ -1043,6 +1053,7 @@ public:
       for(auto& v : vp)
       {
         vec[int64_t{v.timestamp}] = ossia::convert<val_type>(v.value);
+        self.controls_changed.set(N);
       }
 
       // the last value will be the first for the next tick
@@ -1148,8 +1159,11 @@ public:
       }
     }
 
-    if(cqueue.size_approx() < 1)
+    if(cqueue.size_approx() < 1 && controls_changed.any())
+    {
       cqueue.try_enqueue(controls);
+      controls_changed.reset();
+    }
   }
 };
 
@@ -1246,6 +1260,15 @@ class Executor: public Engine::Execution::
           }
       };
 
+      struct control_updater
+      {
+          ossia::value& control;
+          ossia::value v;
+          void operator()() {
+            control = v;
+          }
+      };
+
       for(std::size_t idx = control_start; idx < control_start + control_count; idx++)
       {
         auto inlet = static_cast<ControlInlet*>(element.inlets_ref()[idx]);
@@ -1253,7 +1276,9 @@ class Executor: public Engine::Execution::
 
         QObject::connect(inlet, &ControlInlet::valueChanged,
                 this, [=] (const ossia::value& val) {
-          this->system().executionQueue.enqueue(value_adder{*port, val});
+          //this->system().executionQueue.enqueue(value_adder{*port, val});
+          this->system().executionQueue.enqueue(control_updater{node->controls[idx - control_start], val});
+
         });
       }
 
