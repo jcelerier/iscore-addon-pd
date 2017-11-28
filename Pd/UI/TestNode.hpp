@@ -25,28 +25,36 @@ namespace Pd
 
 struct SomeInfo
 {
-  static const constexpr auto prettyName = "My Funny Process";
-  static const constexpr auto objectKey = "FunnyProcess";
-  static const constexpr auto Process_uuid = make_uuid("f6b88ec9-cd56-43e8-a568-33208d5a8fb7");
-  static const constexpr auto Executor_uuid = make_uuid("7f655416-17ce-4ddd-aaad-3bb7476f03ab");
-  static const constexpr auto Inspector_uuid = make_uuid("74950a6c-8d82-4441-857d-14dac005cade");
+  struct Metadata
+  {
+    static const constexpr auto prettyName = "My Funny Process";
+    static const constexpr auto objectKey = "FunnyProcess";
+    static const constexpr auto uuid = make_uuid("f6b88ec9-cd56-43e8-a568-33208d5a8fb7");
+  };
+
+  struct DefaultState
+  {
+
+  };
 
   static const constexpr auto info =
-    Process::create_node()
+      Process::create_node()
       .audio_ins({{"audio1"}, {"audio2"}})
       .midi_ins()
       .midi_outs({{"midi1"}})
       .value_ins()
       .value_outs()
       .controls(Process::FloatSlider{"foo", .0, 10., 5.})
+      .state<DefaultState>()
       .build();
 
-
-  static void fun(
+  static void run(
       const ossia::audio_port& p1,
       const ossia::audio_port& p2,
       const Process::timed_vec<float>& o1,
       ossia::midi_port& p,
+      DefaultState&,
+      ossia::time_value prev_date,
       ossia::token_request tk,
       ossia::execution_state& st)
   {

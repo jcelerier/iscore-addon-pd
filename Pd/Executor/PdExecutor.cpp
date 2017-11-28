@@ -11,7 +11,6 @@
 #include <ossia/dataflow/node_process.hpp>
 #include <Pd/PdProcess.hpp>
 #include <QFileInfo>
-#include <Pd/UI/PdNode.hpp>
 #include <Engine/score2OSSIA.hpp>
 #include <ossia/dataflow/audio_parameter.hpp>
 #include <ossia-qt/js_utilities.hpp>

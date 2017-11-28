@@ -11,6 +11,8 @@
 
 #include <Pd/UI/TestNode.hpp>
 #include <Pd/UI/MidiUtil.hpp>
+#include <Pd/UI/AngleNode.hpp>
+#include <Pd/UI/VelToNote.hpp>
 #include <score_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -37,10 +39,26 @@ std::vector<std::unique_ptr<score::InterfaceBase>> score_addon_pd::factories(
 {
     return instantiate_factories<
             score::ApplicationContext,
-         FW<Process::ProcessModelFactory, Pd::ProcessFactory, Pd::test_gen::process_factory, Pd::MidiUtil::factories::process_factory>
-        , FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory, Pd::test_gen::inspector_factory, Pd::MidiUtil::factories::inspector_factory>
-        , FW<Process::LayerFactory, Pd::LayerFactory,Pd::test_gen::layer_factory, Pd::MidiUtil::factories::layer_factory>
-        , FW<Engine::Execution::ProcessComponentFactory, Pd::ComponentFactory, Pd::test_gen::executor_factory, Pd::MidiUtil::factories::executor_factory>
+         FW<Process::ProcessModelFactory
+            , Pd::ProcessFactory
+            , Pd::Direction::Factories::process_factory
+            , Pd::PulseToNote::Factories::process_factory
+            , Pd::MidiUtil::Factories::process_factory>
+        , FW<Process::InspectorWidgetDelegateFactory
+            , Pd::InspectorFactory
+            , Pd::Direction::Factories::inspector_factory
+            , Pd::PulseToNote::Factories::inspector_factory
+            , Pd::MidiUtil::Factories::inspector_factory>
+        , FW<Process::LayerFactory
+            , Pd::LayerFactory
+            , Pd::Direction::Factories::layer_factory
+            , Pd::PulseToNote::Factories::layer_factory
+            , Pd::MidiUtil::Factories::layer_factory>
+        , FW<Engine::Execution::ProcessComponentFactory
+            , Pd::ComponentFactory
+            , Pd::Direction::Factories::executor_factory
+            , Pd::PulseToNote::Factories::executor_factory
+            , Pd::MidiUtil::Factories::executor_factory>
     >(ctx, key);
 }
 

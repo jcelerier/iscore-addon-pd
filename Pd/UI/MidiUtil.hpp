@@ -106,26 +106,7 @@ static Q_DECL_RELAXED_CONSTEXPR frozen::unordered_map<int, scales_array, scale::
   , { scale::VI,         make_scale({ 1,0,0,0,1,0,0,0,0,1,0,0 })}
   , { scale::VII,        make_scale({ 0,0,1,0,0,1,0,0,0,0,0,1 })}
 };
-/*
-static Q_DECL_RELAXED_CONSTEXPR frozen::unordered_map<const char*, scales_array, scale::SCALES_MAX> scales_text{
-    //                                     C   D   E F   G   A   B
-    { "all",        make_scale({ 1,1,1,1,1,1,1,1,1,1,1,1 })}
-  , { "ionian",     make_scale({ 1,0,1,0,1,1,0,1,0,1,0,1 })}
-  , { "dorian",     make_scale({ 1,0,1,1,0,1,0,1,0,1,1,0 })}
-  , { "phyrgian",   make_scale({ 1,1,0,1,0,1,0,1,1,0,1,0 })}
-  , { "lydian",     make_scale({ 1,0,1,0,1,0,1,1,0,1,0,1 })}
-  , { "mixolydian", make_scale({ 1,0,1,0,1,1,0,1,0,1,1,0 })}
-  , { "aeolian",    make_scale({ 1,0,1,1,0,1,0,1,1,0,1,0 })}
-  , { "locrian",    make_scale({ 1,1,0,1,0,1,1,0,1,0,1,0 })}
-  , { "I",          make_scale({ 1,0,0,0,1,0,0,1,0,0,0,0 })}
-  , { "II",         make_scale({ 0,0,1,0,0,1,0,0,0,1,0,0 })}
-  , { "III",        make_scale({ 0,0,0,0,1,0,0,1,0,0,0,1 })}
-  , { "IV",         make_scale({ 1,0,0,0,0,1,0,0,0,1,0,0 })}
-  , { "V",          make_scale({ 0,0,1,0,0,0,0,1,0,0,0,1 })}
-  , { "VI",         make_scale({ 1,0,0,0,1,0,0,0,0,1,0,0 })}
-  , { "VII",        make_scale({ 0,0,1,0,0,1,0,0,0,0,0,1 })}
-};
-*/
+
 static
 std::size_t find_closest_index(const scale_array& arr, std::size_t i)
 {
@@ -172,13 +153,14 @@ std::size_t find_closest_index(const scale_array& arr, std::size_t i)
 }
 
 
-struct MidiUtilNode
+struct Node
 {
-  static const constexpr auto prettyName = "Midi scale";
-  static const constexpr auto objectKey = "MidiScale";
-  static const constexpr auto Process_uuid = make_uuid("06b33b83-bb67-4f7a-9980-f5d66e4266c5");
-  static const constexpr auto Executor_uuid = make_uuid("179e30ad-af42-4a2f-9867-f3e594429818");
-  static const constexpr auto Inspector_uuid = make_uuid("c28ee9c2-731f-4d94-997e-ee12982236a1");
+  struct Metadata
+  {
+    static const constexpr auto prettyName = "Midi scale";
+    static const constexpr auto objectKey = "MidiScale";
+    static const constexpr auto uuid = make_uuid("06b33b83-bb67-4f7a-9980-f5d66e4266c5");
+  };
 
   static const constexpr auto info =
     Process::create_node()
@@ -194,12 +176,13 @@ struct MidiUtilNode
   )
   .build();
 
-  static void fun(
+  static void run(
       const ossia::midi_port& midi_in,
       const Process::timed_vec<std::string>& sc,
       const Process::timed_vec<int>& base,
       const Process::timed_vec<int>& transp,
       ossia::midi_port& midi_out,
+      ossia::time_value prev_date,
       ossia::token_request tk,
       ossia::execution_state& st)
   {
@@ -220,20 +203,7 @@ struct MidiUtilNode
     }
   }
 };
-
-struct factories
-{
-    using process = Process::ControlProcess<MidiUtilNode>;
-    using process_factory = Process::GenericProcessModelFactory<process>;
-
-    using executor = Process::Executor<MidiUtilNode>;
-    using executor_factory = Engine::Execution::ProcessComponentFactory_T<executor>;
-
-    using inspector = Process::InspectorWidget<MidiUtilNode>;
-    using inspector_factory = Process::InspectorFactory<MidiUtilNode>;
-
-    using layer_factory = WidgetLayer::LayerFactory<process, inspector>;
-};
+using Factories = Process::Factories<Node>;
 }
 
 
