@@ -27,6 +27,9 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/TestNode.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/MidiUtil.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/AngleNode.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/VelToNote.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/LFO.hpp"
 
   "${CMAKE_CURRENT_SOURCE_DIR}/score_addon_pd.hpp"
 
@@ -54,6 +57,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC score_plugin_engine score_plugin_sc
 target_include_directories(${PROJECT_NAME} PUBLIC
   3rdparty/libpd/libpd_wrapper
   3rdparty/libpd/pure-data/src
+  ${OSSIA_3RDPARTY_FOLDER}/exprtk
   )
 
 setup_score_plugin(${PROJECT_NAME})

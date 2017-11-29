@@ -455,6 +455,7 @@ struct ComboBox: ControlInfo
 
     return sl;
   }
+
   auto make_item(ControlInlet& inlet, const score::DocumentContext& ctx, QWidget* parent, QObject* context) const
   {
     auto widg = new QWidget;
@@ -531,20 +532,56 @@ struct Enum: ControlInfo
     QObject::connect(&inlet, &ControlInlet::valueChanged,
             context, [*this,sl] (ossia::value val) {
       auto v = QString::fromStdString(ossia::convert<std::string>(val));
-      auto idx = ossia::find(values, v);
-      if(idx != values.end())
+      auto it = ossia::find(values, v);
+      if(it != values.end())
       {
-        sl->setCurrentIndex(std::distance(values.begin(), idx));
+        sl->setCurrentIndex(std::distance(values.begin(), it));
       }
     });
 
     return sl;
   }
+
   auto make_item(ControlInlet& inlet, const score::DocumentContext& ctx, QWidget* parent, QObject* context) const
   {
-    return make_widget(inlet, ctx, parent, context);
-  }
+    auto widg = new QWidget;
+    auto lay = new QVBoxLayout{widg};
+    lay->setSpacing(2);
+    lay->setMargin(2);
+    lay->setContentsMargins(0, 0, 0, 0);
+    auto sl = new QSlider{widg};
 
+    auto label = new QLabel{widg};
+    label->setContentsMargins(0, 0, 0, 0);
+    label->setAlignment(Qt::AlignCenter);
+    lay->addWidget(sl);
+    lay->addWidget(label);
+
+    sl->setRange(0, N - 1);
+    sl->setContentsMargins(0, 0, 0, 0);
+    sl->setOrientation(Qt::Horizontal);
+    sl->setValue(init);
+
+    QObject::connect(sl, &QSlider::valueChanged,
+            context, [*this,label,&inlet,&ctx] (int val) {
+      label->setText(values[val]);
+      CommandDispatcher<>{ctx.commandStack}.submitCommand<Pd::SetControlValue>(inlet, values[val]);
+    });
+
+    QObject::connect(&inlet, &ControlInlet::valueChanged,
+            context, [*this,label,sl] (ossia::value val) {
+      auto v = QString::fromStdString(ossia::convert<std::string>(val));
+      auto it = ossia::find(values, v);
+      if(it != values.end())
+      {
+        auto idx = std::distance(values.begin(), it);
+        sl->setValue(idx);
+        label->setText(values[idx]);
+      }
+    });
+
+    return widg;
+  }
 };
 
 template<typename... Args>
