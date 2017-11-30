@@ -9,11 +9,6 @@
 
 #include <Scenario/score_plugin_scenario.hpp>
 
-#include <Pd/UI/TestNode.hpp>
-#include <Pd/UI/MidiUtil.hpp>
-#include <Pd/UI/AngleNode.hpp>
-#include <Pd/UI/VelToNote.hpp>
-#include <Pd/UI/LFO.hpp>
 #include <score_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
@@ -41,29 +36,13 @@ std::vector<std::unique_ptr<score::InterfaceBase>> score_addon_pd::factories(
     return instantiate_factories<
             score::ApplicationContext,
          FW<Process::ProcessModelFactory
-            , Pd::ProcessFactory
-            , Pd::Direction::Factories::process_factory
-            , Pd::PulseToNote::Factories::process_factory
-            , Pd::LFO::Factories::process_factory
-            , Pd::MidiUtil::Factories::process_factory>
+            , Pd::ProcessFactory>
         , FW<Process::InspectorWidgetDelegateFactory
-            , Pd::InspectorFactory
-            , Pd::Direction::Factories::inspector_factory
-            , Pd::PulseToNote::Factories::inspector_factory
-            , Pd::LFO::Factories::inspector_factory
-            , Pd::MidiUtil::Factories::inspector_factory>
+            , Pd::InspectorFactory>
         , FW<Process::LayerFactory
-            , Pd::LayerFactory
-            , Pd::Direction::Factories::layer_factory
-            , Pd::PulseToNote::Factories::layer_factory
-            , Pd::LFO::Factories::layer_factory
-            , Pd::MidiUtil::Factories::layer_factory>
+            , Pd::LayerFactory>
         , FW<Engine::Execution::ProcessComponentFactory
-            , Pd::ComponentFactory
-            , Pd::Direction::Factories::executor_factory
-            , Pd::PulseToNote::Factories::executor_factory
-            , Pd::LFO::Factories::executor_factory
-            , Pd::MidiUtil::Factories::executor_factory>
+            , Pd::ComponentFactory>
     >(ctx, key);
 }
 

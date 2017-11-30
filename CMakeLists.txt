@@ -24,13 +24,6 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Executor/PdExecutor.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorWidget.hpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/TestNode.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/MidiUtil.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/AngleNode.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/VelToNote.hpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/LFO.hpp"
-
   "${CMAKE_CURRENT_SOURCE_DIR}/score_addon_pd.hpp"
 
 )
@@ -42,7 +35,6 @@ set(SRCS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Executor/PdExecutor.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Inspector/PdInspectorWidget.cpp"
 
-  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/UI/PdNode.cpp"
 
   "${CMAKE_CURRENT_SOURCE_DIR}/score_addon_pd.cpp"
 )
