@@ -3,7 +3,6 @@
 #include <Pd/PdLayer.hpp>
 #include <Pd/Executor/PdExecutor.hpp>
 #include <Pd/Commands/PdCommandFactory.hpp>
-#include <Dataflow/ApplicationPlugin.hpp>
 #include <score/plugins/customfactory/FactorySetup.hpp>
 #include <score_addon_pd_commands_files.hpp>
 

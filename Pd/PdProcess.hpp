@@ -1,6 +1,5 @@
 #pragma once
 #include <Pd/PdMetadata.hpp>
-#include <Dataflow/UI/DataflowProcessNode.hpp>
 #include <Process/Process.hpp>
 #include <Process/WidgetLayer/WidgetProcessFactory.hpp>
 #include <Process/WidgetLayer/WidgetLayerPresenter.hpp>

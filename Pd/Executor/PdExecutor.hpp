@@ -13,7 +13,6 @@
 #include <ossia/editor/scenario/time_value.hpp>
 #include <Device/Protocol/DeviceList.hpp>
 #include <z_libpd.h>
-#include <Dataflow/DocumentPlugin.hpp>
 #include <ossia/detail/string_view.hpp>
 #include <boost/circular_buffer.hpp>
 #include <score_addon_pd_export.h>
