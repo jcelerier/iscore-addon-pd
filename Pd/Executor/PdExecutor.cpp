@@ -88,7 +88,7 @@ PdGraphNode::PdGraphNode(
   pd_setinstance(m_instance);
 
   // Enable audio
-  libpd_init_audio(m_audioIns, m_audioOuts, 44100);
+  libpd_init_audio(m_audioIns, m_audioOuts, ctx.plugin.execState.sampleRate);
 
   libpd_start_message(1);
   libpd_add_float(1.0f);
@@ -297,7 +297,7 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
   // Setup
   pd_setinstance(m_instance);
   m_currentInstance = this;
-  libpd_init_audio(m_audioIns, m_audioOuts, 44100);
+  libpd_init_audio(m_audioIns, m_audioOuts, e.sampleRate);
 
   const uint64_t bs = libpd_blocksize();
 

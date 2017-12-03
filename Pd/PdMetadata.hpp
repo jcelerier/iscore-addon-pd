@@ -13,6 +13,8 @@ PROCESS_METADATA(
         Pd::ProcessModel,
         "7b3b18ea-311b-40f9-b04e-60ec1fe05786",
         "PureData",
-        "PureData"
+        "PureData",
+        "Script",
+        {}
         )
 
