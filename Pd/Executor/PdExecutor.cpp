@@ -181,32 +181,32 @@ PdGraphNode::PdGraphNode(
   libpd_set_floathook([] (const char *recv, float f) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_value(f);
+      v->add_raw_value(f);
     }
   });
   libpd_set_banghook([] (const char *recv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_value(ossia::impulse{});
+      v->add_raw_value(ossia::impulse{});
     }
   });
   libpd_set_symbolhook([] (const char *recv, const char *sym) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_value(std::string(sym));
+      v->add_raw_value(std::string(sym));
     }
   });
 
   libpd_set_listhook([] (const char *recv, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_value(libpd_list_wrapper{argv, argc}.to_list());
+      v->add_raw_value(libpd_list_wrapper{argv, argc}.to_list());
     }
   });
   libpd_set_messagehook([] (const char *recv, const char *msg, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_value(libpd_list_wrapper{argv, argc}.to_list());
+      v->add_raw_value(libpd_list_wrapper{argv, argc}.to_list());
     }
   });
 
