@@ -17,6 +17,8 @@
 #include <boost/circular_buffer.hpp>
 #include <score_addon_pd_export.h>
 
+#include <ossia/dataflow/graph_node.hpp>
+
 namespace Pd
 {
 
