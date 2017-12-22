@@ -18,16 +18,6 @@ ProcessModel::ProcessModel(
   metadata().setInstanceName(*this);
 }
 
-ProcessModel::ProcessModel(
-    const ProcessModel& source,
-    const Id<Process::ProcessModel>& id,
-    QObject* parent):
-  Process::ProcessModel{source, id, Metadata<ObjectKey_k, ProcessModel>::get(), parent},
-  m_script{source.m_script}
-{
-  metadata().setInstanceName(*this);
-}
-
 ProcessModel::~ProcessModel()
 {
 }

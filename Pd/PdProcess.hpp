@@ -28,11 +28,6 @@ class ProcessModel final : public Process::ProcessModel
         const Id<Process::ProcessModel>& id,
         QObject* parent);
 
-    explicit ProcessModel(
-        const ProcessModel& source,
-        const Id<Process::ProcessModel>& id,
-        QObject* parent);
-
     template<typename Impl>
     explicit ProcessModel(
         Impl& vis,

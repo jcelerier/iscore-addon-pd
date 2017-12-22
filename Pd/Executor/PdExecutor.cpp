@@ -488,17 +488,8 @@ Component::Component(
         element.midiInput(), element.midiOutput()
         );
 
-  m_ossia_process =
-      std::make_shared<pd_process>(node);
-
-  int i = 0;
-  for(auto p : model_inlets)
-    ctx.plugin.inlets.insert({p, {node, node->inputs()[i++]}});
-  i = 0;
-  for(auto p : model_outlets)
-    ctx.plugin.outlets.insert({p, {node, node->outputs()[i++]}});
-
-  ctx.plugin.execGraph->add_node(node);
+  m_ossia_process = std::make_shared<pd_process>(node);
+  ctx.plugin.register_node(element, node);
 }
 
 PdGraphNode* PdGraphNode::m_currentInstance{};
