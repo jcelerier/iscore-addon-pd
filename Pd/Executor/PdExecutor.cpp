@@ -14,10 +14,26 @@
 #include <Engine/score2OSSIA.hpp>
 #include <ossia/dataflow/audio_parameter.hpp>
 #include <ossia-qt/js_utilities.hpp>
-#include <ossia/dataflow/graph.hpp>
+#include <ossia/dataflow/graph/graph.hpp>
+
+#include <z_libpd.h>
 namespace Pd
 {
 
+struct ossia_to_pd_value
+{
+  const char* mess{};
+  void operator()() const { }
+  template<typename T>
+  void operator()(const T&) const { }
+
+  void operator()(float f) const { libpd_float(mess, f); }
+  void operator()(int f) const { libpd_float(mess, f); }
+  void operator()(const std::string& f) const { libpd_symbol(mess, f.c_str()); }
+  void operator()(const ossia::impulse& f) const { libpd_bang(mess); }
+
+  // TODO convert other types
+};
 
 struct libpd_list_wrapper
 {

@@ -1,6 +1,6 @@
 #pragma once
 #define PDINSTANCE
-
+struct _pdinstance;
 #include <ossia/editor/scenario/time_process.hpp>
 #include <QJSEngine>
 #include <QJSValue>
@@ -12,7 +12,6 @@
 #include <score/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
 #include <Device/Protocol/DeviceList.hpp>
-#include <z_libpd.h>
 #include <ossia/detail/string_view.hpp>
 #include <boost/circular_buffer.hpp>
 #include <score_addon_pd_export.h>
@@ -50,27 +49,13 @@ private:
   ossia::midi_port* get_midi_in() const;
   ossia::midi_port* get_midi_out() const;
 
-  struct ossia_to_pd_value
-  {
-    const char* mess{};
-    void operator()() const { }
-    template<typename T>
-    void operator()(const T&) const { }
-
-    void operator()(float f) const { libpd_float(mess, f); }
-    void operator()(int f) const { libpd_float(mess, f); }
-    void operator()(const std::string& f) const { libpd_symbol(mess, f.c_str()); }
-    void operator()(const ossia::impulse& f) const { libpd_bang(mess); }
-
-    // TODO convert other types
-  };
 
   void run(ossia::token_request t, ossia::execution_state& e) override;
   void add_dzero(std::string& s) const;
 
   static PdGraphNode* m_currentInstance;
 
-  t_pdinstance * m_instance{};
+  _pdinstance* m_instance{};
   int m_dollarzero = 0;
 
   std::size_t m_audioIns{};
