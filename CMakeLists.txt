@@ -45,7 +45,7 @@ score_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} PUBLIC -L/usr/local/lib )
 endif()
-target_link_libraries(${PROJECT_NAME} PUBLIC score_plugin_engine score_plugin_scenario ${LIBPD_LIBRARY} dl)
+target_link_libraries(${PROJECT_NAME} PUBLIC score_plugin_engine score_plugin_scenario ${LIBPD_LIBRARY} ${CMAKE_DL_LIBS})
 target_include_directories(${PROJECT_NAME} PUBLIC
   3rdparty/libpd/libpd_wrapper
   3rdparty/libpd/pure-data/src
