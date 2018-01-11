@@ -14,7 +14,7 @@
 #include <Engine/score2OSSIA.hpp>
 #include <ossia/dataflow/audio_parameter.hpp>
 #include <ossia-qt/js_utilities.hpp>
-#include <ossia/dataflow/graph/graph.hpp>
+#include <ossia/dataflow/execution_state.hpp>
 
 #include <z_libpd.h>
 namespace Pd
@@ -105,7 +105,7 @@ PdGraphNode::PdGraphNode(
   pd_setinstance(m_instance);
 
   // Enable audio
-  libpd_init_audio(m_audioIns, m_audioOuts, ctx.plugin.execState.sampleRate);
+  libpd_init_audio(m_audioIns, m_audioOuts, ctx.plugin.execState->sampleRate);
 
   libpd_start_message(1);
   libpd_add_float(1.0f);
