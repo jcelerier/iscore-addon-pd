@@ -5,5 +5,5 @@
 
 namespace Pd
 {
-using ProcessFactory = Process::GenericProcessModelFactory<ProcessModel>;
+using ProcessFactory = Process::ProcessFactory_T<ProcessModel>;
 }

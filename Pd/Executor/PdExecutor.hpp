@@ -73,24 +73,8 @@ private:
   std::string m_file;
 };
 
-
-class DataflowProcessComponent :
-    public Engine::Execution::ProcessComponent
-{
-
-    public:
-        using Engine::Execution::ProcessComponent::ProcessComponent;
-
-    ~DataflowProcessComponent()
-    {
-      if(node) node->clear();
-    }
-
-  ossia::node_ptr node;
-};
-
 class Component final :
-    public DataflowProcessComponent
+    public Engine::Execution::ProcessComponent
 {
         COMPONENT_METADATA("78657f42-3a2a-4b80-8736-8736463442b4")
 
@@ -101,6 +85,9 @@ class Component final :
                 const Engine::Execution::Context& ctx,
                 const Id<score::Component>& id,
                 QObject* parent);
+
+        ~Component();
+
 };
 
 

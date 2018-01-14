@@ -467,7 +467,7 @@ Component::Component(
     const ::Engine::Execution::Context& ctx,
     const Id<score::Component>& id,
     QObject* parent):
-  DataflowProcessComponent{
+  Engine::Execution::ProcessComponent{
       element, ctx, id, "PdComponent", parent}
 {
   QFileInfo f(element.script());
@@ -505,7 +505,11 @@ Component::Component(
         );
 
   m_ossia_process = std::make_shared<pd_process>(node);
-  ctx.plugin.register_node(element, node);
+}
+
+Component::~Component()
+{
+
 }
 
 PdGraphNode* PdGraphNode::m_currentInstance{};

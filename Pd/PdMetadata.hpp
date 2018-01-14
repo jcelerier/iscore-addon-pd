@@ -15,6 +15,7 @@ PROCESS_METADATA(
         "PureData",
         "PureData",
         "Script",
-        {}
+        {},
+        Process::ProcessFlags::SupportsAll
         )
 

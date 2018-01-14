@@ -42,9 +42,6 @@ class ProcessModel final : public Process::ProcessModel
 
     ~ProcessModel() override;
 
-    Process::Inlets inlets() const override;
-    Process::Outlets outlets() const override;
-
     int audioInputs() const;
     int audioOutputs() const;
     bool midiInput() const;

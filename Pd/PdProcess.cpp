@@ -22,9 +22,6 @@ ProcessModel::~ProcessModel()
 {
 }
 
-Process::Inlets ProcessModel::inlets() const { return m_inlets; }
-Process::Outlets ProcessModel::outlets() const { return m_outlets; }
-
 int ProcessModel::audioInputs() const
 {
   return m_audioInputs;
