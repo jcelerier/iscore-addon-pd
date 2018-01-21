@@ -24,7 +24,7 @@ public:
       const score::DocumentContext& context,
       QWidget* parent);
 
-signals:
+Q_SIGNALS:
   void pressed();
   void contextMenuRequested(QPoint);
 

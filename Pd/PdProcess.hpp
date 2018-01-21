@@ -47,13 +47,13 @@ class ProcessModel final : public Process::ProcessModel
     bool midiInput() const;
     bool midiOutput() const;
 
-  public slots:
+  public Q_SLOTS:
     void setAudioInputs(int audioInputs);
     void setAudioOutputs(int audioOutputs);
     void setMidiInput(bool midiInput);
     void setMidiOutput(bool midiOutput);
 
-  signals:
+  Q_SIGNALS:
     void scriptChanged(QString);
     void audioInputsChanged(int audioInputs);
     void audioOutputsChanged(int audioOutputs);

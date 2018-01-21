@@ -22,7 +22,7 @@ public:
     libpd_set_printhook([] (const char *s) { qDebug() << "string: " << s; });
   }
 
-private slots:
+private Q_SLOTS:
 //  void test_pd()
 //  {
 //    using namespace ossia; using namespace ossia::net;
