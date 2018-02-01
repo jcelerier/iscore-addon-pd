@@ -285,7 +285,7 @@ ossia::outlet*PdGraphNode::get_outlet(const char* str) const
   ossia::string_view s = str;
   auto it = ossia::find(m_outmess, s);
   if(it != m_outmess.end())
-    return m_outlets[std::distance(m_outmess.begin(), it) + m_audioOuts].get();
+    return m_outlets[std::distance(m_outmess.begin(), it) + m_audioOuts];
 
   return nullptr;
 }
