@@ -48,7 +48,7 @@ void ProcessModel::setAudioInputs(int audioInputs)
     return;
 
   m_audioInputs = audioInputs;
-  emit audioInputsChanged(m_audioInputs);
+  audioInputsChanged(m_audioInputs);
 }
 
 void ProcessModel::setAudioOutputs(int audioOutputs)
@@ -57,7 +57,7 @@ void ProcessModel::setAudioOutputs(int audioOutputs)
     return;
 
   m_audioOutputs = audioOutputs;
-  emit audioOutputsChanged(m_audioOutputs);
+  audioOutputsChanged(m_audioOutputs);
 }
 
 void ProcessModel::setMidiInput(bool midiInput)
@@ -66,7 +66,7 @@ void ProcessModel::setMidiInput(bool midiInput)
     return;
 
   m_midiInput = midiInput;
-  emit midiInputChanged(m_midiInput);
+  midiInputChanged(m_midiInput);
 }
 
 void ProcessModel::setMidiOutput(bool midiOutput)
@@ -75,7 +75,7 @@ void ProcessModel::setMidiOutput(bool midiOutput)
     return;
 
   m_midiOutput = midiOutput;
-  emit midiOutputChanged(m_midiOutput);
+  midiOutputChanged(m_midiOutput);
 }
 
 void ProcessModel::setScript(const QString& script)
@@ -192,9 +192,9 @@ void ProcessModel::setScript(const QString& script)
     }
   }
 
-  emit inletsChanged();
-  emit outletsChanged();
-  emit scriptChanged(script);
+  inletsChanged();
+  outletsChanged();
+  scriptChanged(script);
 }
 
 const QString&ProcessModel::script() const
