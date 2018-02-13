@@ -11,7 +11,7 @@ struct _pdinstance;
 #include <score/document/DocumentContext.hpp>
 #include <score/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
-#include <Device/Protocol/DeviceList.hpp>
+#include <Explorer/DeviceList.hpp>
 #include <ossia/detail/string_view.hpp>
 #include <boost/circular_buffer.hpp>
 #include <score_addon_pd_export.h>

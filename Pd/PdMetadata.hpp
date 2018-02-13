@@ -16,6 +16,7 @@ PROCESS_METADATA(
         "PureData",
         "Script",
         {},
-        Process::ProcessFlags::SupportsAll
+        Process::ProcessFlags::SupportsAll |
+        Process::ProcessFlags::PutInNewSlot
         )
 
