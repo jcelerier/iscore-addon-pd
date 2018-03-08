@@ -41,6 +41,7 @@ set(SRCS
 
 add_library(${PROJECT_NAME} ${SRCS} ${HDRS})
 
+score_moc_headers(${PROJECT_NAME} "${HDRS}")
 score_generate_command_list_file(${PROJECT_NAME} "${HDRS}")
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} PUBLIC -L/usr/local/lib )
