@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(PdTests)
 
+set(CMAKE_AUTOMOC ON)
 enable_testing()
 find_package(Qt5 5.3 REQUIRED COMPONENTS Core Test)
 
