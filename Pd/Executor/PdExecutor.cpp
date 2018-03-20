@@ -12,7 +12,7 @@
 #include <Pd/PdProcess.hpp>
 #include <QFileInfo>
 #include <Engine/score2OSSIA.hpp>
-#include <ossia/dataflow/audio_parameter.hpp>
+#include <ossia/audio/audio_parameter.hpp>
 #include <ossia-qt/js_utilities.hpp>
 #include <ossia/dataflow/execution_state.hpp>
 
