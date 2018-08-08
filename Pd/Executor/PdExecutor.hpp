@@ -6,8 +6,8 @@ struct _pdinstance;
 #include <QJSValue>
 #include <QString>
 #include <memory>
-#include <Engine/Executor/ProcessComponent.hpp>
-#include <Engine/Executor/ExecutorContext.hpp>
+#include <Process/Execution/ProcessComponent.hpp>
+#include <Process/ExecutionContext.hpp>
 #include <score/document/DocumentContext.hpp>
 #include <score/document/DocumentInterface.hpp>
 #include <ossia/editor/scenario/time_value.hpp>
@@ -30,7 +30,7 @@ class SCORE_ADDON_PD_EXPORT PdGraphNode final :
 public:
   PdGraphNode(
       ossia::string_view folder, ossia::string_view file,
-      const Engine::Execution::Context& ctx,
+      const Execution::Context& ctx,
       std::size_t audio_inputs,
       std::size_t audio_outputs,
       Process::Inlets inmess,
@@ -50,7 +50,7 @@ private:
   ossia::midi_port* get_midi_out() const;
 
 
-  void run(ossia::token_request t, ossia::execution_state& e) override;
+  void run(ossia::token_request t, ossia::exec_state_facade e) noexcept override;
   void add_dzero(std::string& s) const;
 
   static PdGraphNode* m_currentInstance;
@@ -74,7 +74,7 @@ private:
 };
 
 class Component final :
-    public Engine::Execution::ProcessComponent
+    public Execution::ProcessComponent
 {
         COMPONENT_METADATA("78657f42-3a2a-4b80-8736-8736463442b4")
 
@@ -82,7 +82,7 @@ class Component final :
         using model_type = Pd::ProcessModel;
         Component(
                 Pd::ProcessModel& element,
-                const Engine::Execution::Context& ctx,
+                const Execution::Context& ctx,
                 const Id<score::Component>& id,
                 QObject* parent);
 
@@ -91,5 +91,5 @@ class Component final :
 };
 
 
-using ComponentFactory = Engine::Execution::ProcessComponentFactory_T<Pd::Component>;
+using ComponentFactory = Execution::ProcessComponentFactory_T<Pd::Component>;
 }

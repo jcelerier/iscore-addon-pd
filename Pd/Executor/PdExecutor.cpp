@@ -1,9 +1,6 @@
 #include <Pd/Executor/PdExecutor.hpp>
 
 #include <Explorer/DocumentPlugin/DeviceDocumentPlugin.hpp>
-#include <Engine/OSSIA2score.hpp>
-#include <Engine/score2OSSIA.hpp>
-#include <Engine/Executor/DocumentPlugin.hpp>
 #include <vector>
 
 #include <ossia/editor/state/message.hpp>
@@ -11,7 +8,8 @@
 #include <ossia/dataflow/node_process.hpp>
 #include <Pd/PdProcess.hpp>
 #include <QFileInfo>
-#include <Engine/score2OSSIA.hpp>
+#include <Process/Dataflow/Port.hpp>
+#include <ossia/dataflow/port.hpp>
 #include <ossia/audio/audio_parameter.hpp>
 #include <ossia-qt/js_utilities.hpp>
 #include <ossia/dataflow/execution_state.hpp>
@@ -72,7 +70,7 @@ struct libpd_list_wrapper
 
 PdGraphNode::PdGraphNode(
     ossia::string_view folder, ossia::string_view file,
-    const Engine::Execution::Context& ctx,
+    const Execution::Context& ctx,
     std::size_t audio_inputs,
     std::size_t audio_outputs,
     Process::Inlets inport,
@@ -105,7 +103,7 @@ PdGraphNode::PdGraphNode(
   pd_setinstance(m_instance);
 
   // Enable audio
-  libpd_init_audio(m_audioIns, m_audioOuts, ctx.plugin.execState->sampleRate);
+  libpd_init_audio(m_audioIns, m_audioOuts, ctx.execState->sampleRate);
 
   libpd_start_message(1);
   libpd_add_float(1.0f);
@@ -131,30 +129,18 @@ PdGraphNode::PdGraphNode(
   {
     auto port = ossia::make_inlet<ossia::audio_port>();
     m_audio_inlet = port->data.target<ossia::audio_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[0]->address()))
-    {
-      port->address = &addr->address();
-    }
     m_inlets.push_back(std::move(port));
   }
   if(midi_in)
   {
     auto port = ossia::make_inlet<ossia::midi_port>();
     m_midi_inlet = port->data.target<ossia::midi_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[m_inlets.size()]->address()))
-    {
-      port->address = &addr->address();
-    }
     m_inlets.push_back(std::move(port));
   }
   m_firstInMessage = m_inlets.size();
   for(std::size_t i = 0; i < m_inmess.size(); i++)
   {
     auto port = ossia::make_inlet<ossia::value_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), inport[m_firstInMessage + i]->address()))
-    {
-      port->address = &addr->address();
-    }
     m_inlets.push_back(port);
   }
 
@@ -163,20 +149,12 @@ PdGraphNode::PdGraphNode(
   {
     auto port = ossia::make_outlet<ossia::audio_port>();
     m_audio_outlet = port->data.target<ossia::audio_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[0]->address()))
-    {
-      port->address = &addr->address();
-    }
     m_outlets.push_back(std::move(port));
   }
   if(midi_out)
   {
     auto port = ossia::make_outlet<ossia::midi_port>();
     m_midi_outlet = port->data.target<ossia::midi_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[m_outlets.size()]->address()))
-    {
-      port->address = &addr->address();
-    }
     m_outlets.push_back(std::move(port));
   }
   m_firstOutMessage = m_outlets.size();
@@ -184,10 +162,6 @@ PdGraphNode::PdGraphNode(
   {
     libpd_bind(m_outmess[i].c_str());
     auto port = ossia::make_outlet<ossia::value_port>();
-    if(auto addr = Engine::score_to_ossia::makeDestination(ctx.devices.list(), outport[m_firstOutMessage + i]->address()))
-    {
-      port->address = &addr->address();
-    }
     m_outlets.push_back(port);
   }
 
@@ -198,32 +172,32 @@ PdGraphNode::PdGraphNode(
   libpd_set_floathook([] (const char *recv, float f) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_raw_value(f);
+      v->write_value(f, {}); // TODO set correct offset
     }
   });
   libpd_set_banghook([] (const char *recv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_raw_value(ossia::impulse{});
+      v->write_value(ossia::impulse{}, {}); // TODO set correct offset
     }
   });
   libpd_set_symbolhook([] (const char *recv, const char *sym) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_raw_value(std::string(sym));
+      v->write_value(std::string(sym), {}); // TODO set correct offset
     }
   });
 
   libpd_set_listhook([] (const char *recv, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_raw_value(libpd_list_wrapper{argv, argc}.to_list());
+      v->write_value(libpd_list_wrapper{argv, argc}.to_list(), {}); // TODO set correct offset
     }
   });
   libpd_set_messagehook([] (const char *recv, const char *msg, int argc, t_atom *argv) {
     if(auto v = m_currentInstance->get_value_port(recv))
     {
-      v->add_raw_value(libpd_list_wrapper{argv, argc}.to_list());
+      v->write_value(libpd_list_wrapper{argv, argc}.to_list(), {}); // TODO set correct offset
     }
   });
 
@@ -232,40 +206,40 @@ PdGraphNode::PdGraphNode(
     {
       v->messages.push_back(
             (velocity > 0)
-            ? mm::MakeNoteOn(channel, pitch, velocity)
-            : mm::MakeNoteOff(channel, pitch, velocity)
+            ? rtmidi::message::note_on(channel, pitch, velocity)
+            : rtmidi::message::note_off(channel, pitch, velocity)
               );
     }
   });
   libpd_set_controlchangehook([] (int channel, int controller, int value) {
     if(auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(mm::MakeControlChange(channel, controller, value + 8192));
+      v->messages.push_back(rtmidi::message::control_change(channel, controller, value + 8192));
     }
   });
 
   libpd_set_programchangehook([] (int channel, int value) {
     if(auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(mm::MakeProgramChange(channel, value));
+      v->messages.push_back(rtmidi::message::program_change(channel, value));
     }
   });
   libpd_set_pitchbendhook([] (int channel, int value) {
     if(auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(mm::MakePitchBend(channel, value));
+      v->messages.push_back(rtmidi::message::pitch_bend(channel, value));
     }
   });
   libpd_set_aftertouchhook([] (int channel, int value) {
     if(auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(mm::MakeAftertouch(channel, value));
+      v->messages.push_back(rtmidi::message::aftertouch(channel, value));
     }
   });
   libpd_set_polyaftertouchhook([] (int channel, int pitch, int value) {
     if(auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(mm::MakePolyPressure(channel, pitch, value));
+      v->messages.push_back(rtmidi::message::poly_pressure(channel, pitch, value));
     }
   });
   libpd_set_midibytehook([] (int port, int byte) {
@@ -309,12 +283,12 @@ ossia::midi_port*PdGraphNode::get_midi_out() const
 }
 
 
-void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
+void PdGraphNode::run(ossia::token_request t, ossia::exec_state_facade e) noexcept
 {
   // Setup
   pd_setinstance(m_instance);
   m_currentInstance = this;
-  libpd_init_audio(m_audioIns, m_audioOuts, e.sampleRate);
+  libpd_init_audio(m_audioIns, m_audioOuts, e.sampleRate());
 
   const uint64_t bs = libpd_blocksize();
 
@@ -339,30 +313,30 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
     auto& dat = m_midi_inlet->messages;
     for(const auto& mess : dat)
     {
-      switch(mess.getMessageType())
+      switch(mess.get_message_type())
       {
-        case mm::MessageType::NOTE_OFF:
-          libpd_noteon(mess.getChannel() - 1, mess.data[1], 0);
+        case rtmidi::message_type::NOTE_OFF:
+          libpd_noteon(mess.get_channel() - 1, mess.bytes[1], 0);
           break;
-        case mm::MessageType::NOTE_ON:
-          libpd_noteon(mess.getChannel() - 1, mess.data[1], mess.data[2]);
+        case rtmidi::message_type::NOTE_ON:
+          libpd_noteon(mess.get_channel() - 1, mess.bytes[1], mess.bytes[2]);
           break;
-        case mm::MessageType::POLY_PRESSURE:
-          libpd_polyaftertouch(mess.getChannel() - 1, mess.data[1], mess.data[2]);
+        case rtmidi::message_type::POLY_PRESSURE:
+          libpd_polyaftertouch(mess.get_channel() - 1, mess.bytes[1], mess.bytes[2]);
           break;
-        case mm::MessageType::CONTROL_CHANGE:
-          libpd_controlchange(mess.getChannel() - 1, mess.data[1], mess.data[2]);
+        case rtmidi::message_type::CONTROL_CHANGE:
+          libpd_controlchange(mess.get_channel() - 1, mess.bytes[1], mess.bytes[2]);
           break;
-        case mm::MessageType::PROGRAM_CHANGE:
-          libpd_programchange(mess.getChannel() - 1, mess.data[1]);
+        case rtmidi::message_type::PROGRAM_CHANGE:
+          libpd_programchange(mess.get_channel() - 1, mess.bytes[1]);
           break;
-        case mm::MessageType::AFTERTOUCH:
-          libpd_aftertouch(mess.getChannel() - 1, mess.data[1]);
+        case rtmidi::message_type::AFTERTOUCH:
+          libpd_aftertouch(mess.get_channel() - 1, mess.bytes[1]);
           break;
-        case mm::MessageType::PITCH_BEND:
-          libpd_pitchbend(mess.getChannel() - 1, mess.data[1] - 8192);
+        case rtmidi::message_type::PITCH_BEND:
+          libpd_pitchbend(mess.get_channel() - 1, mess.bytes[1] - 8192);
           break;
-        case mm::MessageType::INVALID:
+        case rtmidi::message_type::INVALID:
         default:
           break;
       }
@@ -386,12 +360,12 @@ void PdGraphNode::run(ossia::token_request t, ossia::execution_state& e)
 
   // Compute number of samples to process
   optional<ossia::time_value> real_date;
-  if(m_prev_date >= t.date)
+  if(t.prev_date >= t.date)
   {
     real_date = t.date;
-    t.date = m_prev_date + t.date;
+    t.date = t.prev_date + t.date;
   }
-  uint64_t req_samples = norm(t.date, m_prev_date);
+  uint64_t req_samples = norm(t.date, t.prev_date);
 
   if(m_audioOuts == 0)
   {
@@ -464,10 +438,10 @@ public:
 
 Component::Component(
     Pd::ProcessModel& element,
-    const ::Engine::Execution::Context& ctx,
+    const ::Execution::Context& ctx,
     const Id<score::Component>& id,
     QObject* parent):
-  Engine::Execution::ProcessComponent{
+  Execution::ProcessComponent{
       element, ctx, id, "PdComponent", parent}
 {
   QFileInfo f(element.script());

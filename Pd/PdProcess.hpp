@@ -15,11 +15,7 @@ class ProcessModel final : public Process::ProcessModel
 {
     SCORE_SERIALIZE_FRIENDS
     PROCESS_METADATA_IMPL(Pd::ProcessModel)
-    Q_OBJECT
-    Q_PROPERTY(int audioInputs READ audioInputs WRITE setAudioInputs NOTIFY audioInputsChanged)
-    Q_PROPERTY(int audioOutputs READ audioOutputs WRITE setAudioOutputs NOTIFY audioOutputsChanged)
-    Q_PROPERTY(bool midiInput READ midiInput WRITE setMidiInput NOTIFY midiInputChanged)
-    Q_PROPERTY(bool midiOutput READ midiOutput WRITE setMidiOutput NOTIFY midiOutputChanged)
+    W_OBJECT(ProcessModel)
 
     public:
       using base_type = Process::ProcessModel;
@@ -47,19 +43,22 @@ class ProcessModel final : public Process::ProcessModel
     bool midiInput() const;
     bool midiOutput() const;
 
-  public Q_SLOTS:
     void setAudioInputs(int audioInputs);
     void setAudioOutputs(int audioOutputs);
     void setMidiInput(bool midiInput);
     void setMidiOutput(bool midiOutput);
 
-  Q_SIGNALS:
-    void scriptChanged(QString);
-    void audioInputsChanged(int audioInputs);
-    void audioOutputsChanged(int audioOutputs);
-    void midiInputChanged(bool midiInput);
-    void midiOutputChanged(bool midiOutput);
 
+    void scriptChanged(QString v) W_SIGNAL(scriptChanged, v);
+    void audioInputsChanged(int v) W_SIGNAL(audioInputsChanged, v);
+    void audioOutputsChanged(int v) W_SIGNAL(audioOutputsChanged, v);
+    void midiInputChanged(bool v) W_SIGNAL(midiInputChanged, v);
+    void midiOutputChanged(bool v) W_SIGNAL(midiOutputChanged, v);
+
+    W_PROPERTY(int, audioInputs READ audioInputs WRITE setAudioInputs NOTIFY audioInputsChanged)
+    W_PROPERTY(int, audioOutputs READ audioOutputs WRITE setAudioOutputs NOTIFY audioOutputsChanged)
+    W_PROPERTY(bool, midiInput READ midiInput WRITE setMidiInput NOTIFY midiInputChanged)
+    W_PROPERTY(bool, midiOutput READ midiOutput WRITE setMidiOutput NOTIFY midiOutputChanged)
   private:
     QString m_script;
     int m_audioInputs{0};

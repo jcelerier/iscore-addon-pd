@@ -6,21 +6,11 @@
 #include <score/plugins/qt_interfaces/GUIApplicationPlugin_QtInterface.hpp>
 
 class score_addon_pd final:
-        public QObject,
         public score::Plugin_QtInterface,
         public score::FactoryInterface_QtInterface,
         public score::CommandFactory_QtInterface,
         public score::ApplicationPlugin_QtInterface
 {
-        Q_OBJECT
-        Q_PLUGIN_METADATA(IID FactoryInterface_QtInterface_iid)
-        Q_INTERFACES(
-                score::Plugin_QtInterface
-                score::FactoryInterface_QtInterface
-                score::CommandFactory_QtInterface
-                score::ApplicationPlugin_QtInterface
-                )
-
     public:
         score_addon_pd();
         ~score_addon_pd();

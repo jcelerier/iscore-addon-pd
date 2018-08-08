@@ -6,12 +6,11 @@
 #include <score/plugins/customfactory/FactorySetup.hpp>
 #include <score_addon_pd_commands_files.hpp>
 
-#include <Scenario/score_plugin_scenario.hpp>
+#include <score_plugin_scenario.hpp>
 
 #include <score_plugin_deviceexplorer.hpp>
 
 #include "z_libpd.h"
-#include "m_imp.h"
 std::pair<const CommandGroupKey, CommandGeneratorMap> score_addon_pd::make_commands()
 {
     using namespace Pd;
@@ -20,11 +19,9 @@ std::pair<const CommandGroupKey, CommandGeneratorMap> score_addon_pd::make_comma
         Pd::CommandFactoryName(),
                 CommandGeneratorMap{}};
 
-    using Types = TypeList<
-#include <score_addon_pd_commands.hpp>
-      >;
-    for_each_type<Types>(score::commands::FactoryInserter{cmds.second});
-
+    ossia::for_each_type<
+    #include <score_addon_pd_commands.hpp>
+        >(score::commands::FactoryInserter{cmds.second});
 
     return cmds;
 }
@@ -40,7 +37,7 @@ std::vector<std::unique_ptr<score::InterfaceBase>> score_addon_pd::factories(
             , Pd::InspectorFactory>
         , FW<Process::LayerFactory
             , Pd::LayerFactory>
-        , FW<Engine::Execution::ProcessComponentFactory
+        , FW<Execution::ProcessComponentFactory
             , Pd::ComponentFactory>
     >(ctx, key);
 }
@@ -79,3 +76,6 @@ UuidKey<score::Plugin> score_addon_pd::key() const
 {
     return_uuid("ed87a509-7319-4303-8cf7-3bba849458cf");
 }
+
+#include <score/plugins/PluginInstances.hpp>
+SCORE_EXPORT_PLUGIN(score_addon_pd)

@@ -2,6 +2,8 @@
 #include <score/widgets/TextLabel.hpp>
 #include <score/widgets/SignalUtils.hpp>
 
+#include <wobjectimpl.h>
+W_OBJECT_IMPL(Pd::PdWidget)
 namespace Pd
 {
 

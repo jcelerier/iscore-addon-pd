@@ -6,7 +6,8 @@
 #include <QRegularExpression>
 #include <QFile>
 #include <score/tools/File.hpp>
-
+#include <wobjectimpl.h>
+W_OBJECT_IMPL(Pd::ProcessModel)
 namespace Pd
 {
 ProcessModel::ProcessModel(

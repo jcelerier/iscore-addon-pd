@@ -17,16 +17,15 @@ namespace Pd
 class PdWidget final
     : public Process::InspectorWidgetDelegate_T<Pd::ProcessModel>
 {
-  Q_OBJECT
+  W_OBJECT(PdWidget)
 public:
   explicit PdWidget(
       const Pd::ProcessModel& object,
       const score::DocumentContext& context,
       QWidget* parent);
 
-Q_SIGNALS:
-  void pressed();
-  void contextMenuRequested(QPoint);
+  void pressed() W_SIGNAL(pressed);
+  void contextMenuRequested(QPoint p) W_SIGNAL(contextMenuRequested, p);
 
 
 private:
