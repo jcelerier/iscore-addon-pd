@@ -1,6 +1,7 @@
 #pragma once
 #include <score/command/Command.hpp>
 
-namespace Pd {
+namespace Pd
+{
 const CommandGroupKey& CommandFactoryName();
 }

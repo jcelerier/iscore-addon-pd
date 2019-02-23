@@ -1,7 +1,8 @@
 #pragma once
 #include <Process/GenericProcessFactory.hpp>
-#include <Pd/PdProcess.hpp>
+
 #include <Pd/PdMetadata.hpp>
+#include <Pd/PdProcess.hpp>
 
 namespace Pd
 {
