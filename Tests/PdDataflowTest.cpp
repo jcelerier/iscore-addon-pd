@@ -7,16 +7,15 @@
 #include <ossia/network/generic/generic_device.hpp>
 #include <ossia/network/local/local.hpp>
 
-#include <QtTest/QTest>
 
 #include <Pd/Executor/PdExecutor.hpp>
 #include <z_libpd.h>
 
 #include <thread>
+// TODO
 
-class PdDataflowTest : public QObject
+class PdDataflowTest
 {
-  Q_OBJECT
 
 public:
   PdDataflowTest()
@@ -25,7 +24,7 @@ public:
     libpd_set_printhook([](const char* s) { qDebug() << "string: " << s; });
   }
 
-private Q_SLOTS:
+private :
   //  void test_pd()
   //  {
   //    using namespace ossia; using namespace ossia::net;
@@ -256,6 +255,4 @@ private Q_SLOTS:
   //  }
 };
 
-QTEST_APPLESS_MAIN(PdDataflowTest)
-
-#include "PdDataflowTest.moc"
+int main() {}
