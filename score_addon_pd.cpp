@@ -1,9 +1,11 @@
 #include "score_addon_pd.hpp"
 
-#include "z_libpd.h"
+// We do this to pevent picking up a potential system /usr/inclde/m_pd.h
+#include "3rdparty/libpd/pure-data/src/m_pd.h"
+#include <z_libpd.h>
 
 #include <score/plugins/FactorySetup.hpp>
-
+#include <QDebug>
 #include <Pd/Commands/PdCommandFactory.hpp>
 #include <Pd/Executor/PdExecutor.hpp>
 #include <Pd/PdFactory.hpp>
@@ -15,7 +17,6 @@ std::pair<const CommandGroupKey, CommandGeneratorMap>
 score_addon_pd::make_commands()
 {
   using namespace Pd;
-  using namespace Dataflow;
   std::pair<const CommandGroupKey, CommandGeneratorMap> cmds{
       Pd::CommandFactoryName(), CommandGeneratorMap{}};
 

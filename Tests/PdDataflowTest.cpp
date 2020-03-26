@@ -7,7 +7,7 @@
 #include <ossia/network/generic/generic_device.hpp>
 #include <ossia/network/local/local.hpp>
 
-
+#include <QDebug>
 #include <Pd/Executor/PdExecutor.hpp>
 #include <z_libpd.h>
 

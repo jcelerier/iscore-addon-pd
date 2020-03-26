@@ -1,5 +1,4 @@
 #pragma once
-#include <Dataflow/Inspector/DataflowWidget.hpp>
 #include <Process/Inspector/ProcessInspectorWidgetDelegate.hpp>
 #include <Process/Inspector/ProcessInspectorWidgetDelegateFactory.hpp>
 
@@ -12,6 +11,7 @@
 #include <QSpinBox>
 #include <QVBoxLayout>
 
+#include <Explorer/Explorer/DeviceExplorerModel.hpp>
 #include <Pd/Commands/EditPd.hpp>
 #include <Pd/PdProcess.hpp>
 namespace Pd

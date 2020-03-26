@@ -1,9 +1,12 @@
 #include <score/widgets/SignalUtils.hpp>
 #include <score/widgets/TextLabel.hpp>
 
+#include <Explorer/DocumentPlugin/DeviceDocumentPlugin.hpp>
 #include <Pd/Inspector/PdInspectorWidget.hpp>
+#include <score/tools/Bind.hpp>
 #include <wobjectimpl.h>
 W_OBJECT_IMPL(Pd::PdWidget)
+
 namespace Pd
 {
 

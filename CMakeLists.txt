@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
 project(score_addon_pd LANGUAGES CXX)
 
 set(PD_MULTI ON CACHE INTERNAL "")
@@ -51,4 +50,4 @@ target_link_libraries(${PROJECT_NAME}
 setup_score_plugin(${PROJECT_NAME})
 
 
-setup_score_tests(Tests)
+# setup_score_tests(Tests)
