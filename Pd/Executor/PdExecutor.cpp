@@ -221,41 +221,41 @@ PdGraphNode::PdGraphNode(
     {
       v->messages.push_back(
           (velocity > 0)
-              ? rtmidi::message::note_on(channel, pitch, velocity)
-              : rtmidi::message::note_off(channel, pitch, velocity));
+              ? libremidi::message::note_on(channel, pitch, velocity)
+              : libremidi::message::note_off(channel, pitch, velocity));
     }
   });
   libpd_set_controlchangehook([](int channel, int controller, int value) {
     if (auto v = m_currentInstance->get_midi_out())
     {
       v->messages.push_back(
-          rtmidi::message::control_change(channel, controller, value + 8192));
+          libremidi::message::control_change(channel, controller, value + 8192));
     }
   });
 
   libpd_set_programchangehook([](int channel, int value) {
     if (auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(rtmidi::message::program_change(channel, value));
+      v->messages.push_back(libremidi::message::program_change(channel, value));
     }
   });
   libpd_set_pitchbendhook([](int channel, int value) {
     if (auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(rtmidi::message::pitch_bend(channel, value));
+      v->messages.push_back(libremidi::message::pitch_bend(channel, value));
     }
   });
   libpd_set_aftertouchhook([](int channel, int value) {
     if (auto v = m_currentInstance->get_midi_out())
     {
-      v->messages.push_back(rtmidi::message::aftertouch(channel, value));
+      v->messages.push_back(libremidi::message::aftertouch(channel, value));
     }
   });
   libpd_set_polyaftertouchhook([](int channel, int pitch, int value) {
     if (auto v = m_currentInstance->get_midi_out())
     {
       v->messages.push_back(
-          rtmidi::message::poly_pressure(channel, pitch, value));
+          libremidi::message::poly_pressure(channel, pitch, value));
     }
   });
   libpd_set_midibytehook([](int port, int byte) {
@@ -331,30 +331,30 @@ void PdGraphNode::run(
     {
       switch (mess.get_message_type())
       {
-        case rtmidi::message_type::NOTE_OFF:
+        case libremidi::message_type::NOTE_OFF:
           libpd_noteon(mess.get_channel() - 1, mess.bytes[1], 0);
           break;
-        case rtmidi::message_type::NOTE_ON:
+        case libremidi::message_type::NOTE_ON:
           libpd_noteon(mess.get_channel() - 1, mess.bytes[1], mess.bytes[2]);
           break;
-        case rtmidi::message_type::POLY_PRESSURE:
+        case libremidi::message_type::POLY_PRESSURE:
           libpd_polyaftertouch(
               mess.get_channel() - 1, mess.bytes[1], mess.bytes[2]);
           break;
-        case rtmidi::message_type::CONTROL_CHANGE:
+        case libremidi::message_type::CONTROL_CHANGE:
           libpd_controlchange(
               mess.get_channel() - 1, mess.bytes[1], mess.bytes[2]);
           break;
-        case rtmidi::message_type::PROGRAM_CHANGE:
+        case libremidi::message_type::PROGRAM_CHANGE:
           libpd_programchange(mess.get_channel() - 1, mess.bytes[1]);
           break;
-        case rtmidi::message_type::AFTERTOUCH:
+        case libremidi::message_type::AFTERTOUCH:
           libpd_aftertouch(mess.get_channel() - 1, mess.bytes[1]);
           break;
-        case rtmidi::message_type::PITCH_BEND:
+        case libremidi::message_type::PITCH_BEND:
           libpd_pitchbend(mess.get_channel() - 1, mess.bytes[1] - 8192);
           break;
-        case rtmidi::message_type::INVALID:
+        case libremidi::message_type::INVALID:
         default:
           break;
       }
@@ -379,14 +379,7 @@ void PdGraphNode::run(
   }
 
   // Compute number of samples to process
-  optional<ossia::time_value> real_date;
-  if (t.prev_date >= t.date)
-  {
-    real_date = t.date;
-    t.date = t.prev_date + t.date;
-  }
-  uint64_t req_samples = ossia::norm(t.date.impl, t.prev_date.impl);
-
+  uint64_t req_samples = t.physical_write_duration(e.modelToSamples());
   if (m_audioOuts == 0)
   {
     libpd_process_raw(m_inbuf.data(), m_outbuf.data());

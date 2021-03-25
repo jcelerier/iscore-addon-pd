@@ -68,6 +68,8 @@ public:
   W_PROPERTY(
       bool,
       midiOutput READ midiOutput WRITE setMidiOutput NOTIFY midiOutputChanged)
+
+  PROPERTY(QString, script READ script WRITE setScript NOTIFY scriptChanged)
 private:
   QString m_script;
   int m_audioInputs{0};

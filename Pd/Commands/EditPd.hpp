@@ -1,13 +1,15 @@
 #pragma once
-#include <score/command/PropertyCommand.hpp>
-#include <score/model/path/Path.hpp>
-
 #include <Pd/Commands/PdCommandFactory.hpp>
 #include <Pd/PdProcess.hpp>
 
+#include <score/command/PropertyCommand.hpp>
+#include <score/model/path/Path.hpp>
+
+#include <Scenario/Commands/ScriptEditCommand.hpp>
+
 namespace Pd
 {
-class EditPdPath final : public score::Command
+class EditPdPath final : public Scenario::EditScript<Pd::ProcessModel, Pd::ProcessModel::p_script>
 {
   SCORE_COMMAND_DECL(
       Pd::CommandFactoryName(),
@@ -15,18 +17,7 @@ class EditPdPath final : public score::Command
       "Edit path to Pd file")
 
 public:
-  EditPdPath(const Pd::ProcessModel& model, QString newpath);
-
-  void undo(const score::DocumentContext& ctx) const override;
-  void redo(const score::DocumentContext& ctx) const override;
-
-protected:
-  void serializeImpl(DataStreamInput& s) const override;
-  void deserializeImpl(DataStreamOutput& s) override;
-
-private:
-  Path<Pd::ProcessModel> m_model;
-  QString m_old, m_new;
+  using Scenario::EditScript<Pd::ProcessModel, Pd::ProcessModel::p_script>::EditScript;
 };
 
 class SetAudioIns final : public score::PropertyCommand

@@ -42,7 +42,7 @@ score_addon_pd::score_addon_pd()
 {
   libpd_init();
   // TODO should not be necessarey
-  libpd_init_audio(2, 2, 44100);
+  libpd_init_audio(2, 2, 48000);
 
   libpd_set_printhook([](const char* s) { qDebug() << "string: " << s; });
   libpd_set_floathook(

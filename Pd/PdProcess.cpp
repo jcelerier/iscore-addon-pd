@@ -6,6 +6,7 @@
 #include <score/serialization/DataStreamVisitor.hpp>
 #include <score/serialization/JSONValueVisitor.hpp>
 #include <score/serialization/JSONVisitor.hpp>
+#include <score/tools/DeleteAll.hpp>
 #include <score/tools/File.hpp>
 
 #include <QFile>
@@ -89,12 +90,9 @@ void ProcessModel::setScript(const QString& script)
 {
   setMidiInput(false);
   setMidiOutput(false);
-  for (auto p : m_inlets)
-    delete p;
-  m_inlets.clear();
-  for (auto p : m_outlets)
-    delete p;
-  m_outlets.clear();
+
+  auto old_inlets = score::clearAndDeleteLater(m_inlets);
+  auto old_outlets = score::clearAndDeleteLater(m_outlets);
 
   m_script = score::locateFilePath(
       script, score::IDocument::documentContext(*this));
@@ -211,9 +209,10 @@ void DataStreamReader::read(const Pd::ProcessModel& proc)
 {
   insertDelimiter();
 
-  readPorts(*this, proc.m_inlets, proc.m_outlets);
   m_stream << proc.m_script << proc.m_audioInputs << proc.m_audioOutputs
            << proc.m_midiInput << proc.m_midiOutput;
+
+  readPorts(*this, proc.m_inlets, proc.m_outlets);
 
   insertDelimiter();
 }
@@ -223,6 +222,9 @@ void DataStreamWriter::write(Pd::ProcessModel& proc)
 {
   checkDelimiter();
 
+  m_stream >> proc.m_script >> proc.m_audioInputs >> proc.m_audioOutputs
+      >> proc.m_midiInput >> proc.m_midiOutput;
+
   writePorts(
       *this,
       components.interfaces<Process::PortFactoryList>(),
@@ -230,36 +232,34 @@ void DataStreamWriter::write(Pd::ProcessModel& proc)
       proc.m_outlets,
       &proc);
 
-
-  m_stream >> proc.m_script >> proc.m_audioInputs >> proc.m_audioOutputs
-      >> proc.m_midiInput >> proc.m_midiOutput;
-
   checkDelimiter();
 }
 
 template <>
-void JSONObjectReader::read(const Pd::ProcessModel& proc)
+void JSONReader::read(const Pd::ProcessModel& proc)
 {
-  readPorts(obj, proc.m_inlets, proc.m_outlets);
   obj["Script"] = proc.script();
   obj["AudioInputs"] = proc.audioInputs();
   obj["AudioOutputs"] = proc.audioOutputs();
   obj["MidiInput"] = proc.midiInput();
   obj["MidiOutput"] = proc.midiOutput();
+
+  readPorts(*this, proc.m_inlets, proc.m_outlets);
 }
 
 template <>
-void JSONObjectWriter::write(Pd::ProcessModel& proc)
+void JSONWriter::write(Pd::ProcessModel& proc)
 {
-  writePorts(
-      obj,
-      components.interfaces<Process::PortFactoryList>(),
-      proc.m_inlets,
-      proc.m_outlets,
-      &proc);
   proc.m_script = obj["Script"].toString();
   proc.m_audioInputs = obj["AudioInputs"].toInt();
   proc.m_audioOutputs = obj["AudioOutputs"].toInt();
   proc.m_midiInput = obj["MidiInput"].toBool();
   proc.m_midiOutput = obj["MidiOutput"].toBool();
+
+  writePorts(
+      *this,
+      components.interfaces<Process::PortFactoryList>(),
+      proc.m_inlets,
+      proc.m_outlets,
+      &proc);
 }
