@@ -15,6 +15,7 @@ set(HDRS
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/PdProcess.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/PdLayer.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/PdMetadata.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/Pd/PdLibrary.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/PdFactory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/PdCommandFactory.hpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Pd/Commands/EditPd.hpp"

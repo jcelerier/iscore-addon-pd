@@ -18,6 +18,7 @@ namespace Pd
 {
 ProcessModel::ProcessModel(
     const TimeVal& duration,
+      const QString& pdpatch,
     const Id<Process::ProcessModel>& id,
     QObject* parent)
     : Process::ProcessModel{duration,
@@ -26,6 +27,7 @@ ProcessModel::ProcessModel(
                             parent}
 {
   metadata().setInstanceName(*this);
+  setScript(pdpatch);
 }
 
 ProcessModel::~ProcessModel() {}
@@ -163,10 +165,10 @@ void ProcessModel::setScript(const QString& script)
       auto it = recv_regex.globalMatch(patch);
       while (it.hasNext())
       {
-        auto m = it.next();
+        const auto& m = it.next();
         if (m.hasMatch())
         {
-          auto var = m.capturedTexts()[1];
+          const auto var = m.capturedTexts()[1];
 
           auto p = new Process::ValueInlet{get_next_id(), this};
           p->setCustomData(var);
@@ -180,10 +182,10 @@ void ProcessModel::setScript(const QString& script)
       auto it = send_regex.globalMatch(patch);
       while (it.hasNext())
       {
-        auto m = it.next();
+        const auto& m = it.next();
         if (m.hasMatch())
         {
-          auto var = m.capturedTexts()[1];
+          const auto var = m.capturedTexts()[1];
 
           auto p = new Process::ValueOutlet{get_next_id(), this};
           p->setCustomData(var);

@@ -23,6 +23,7 @@ public:
   using base_type = Process::ProcessModel;
   explicit ProcessModel(
       const TimeVal& duration,
+      const QString& pdpatch,
       const Id<Process::ProcessModel>& id,
       QObject* parent);
 

@@ -10,6 +10,7 @@
 #include <Pd/Executor/PdExecutor.hpp>
 #include <Pd/PdFactory.hpp>
 #include <Pd/PdLayer.hpp>
+#include <Pd/PdLibrary.hpp>
 #include <score_addon_pd_commands_files.hpp>
 #include <score_plugin_deviceexplorer.hpp>
 #include <score_plugin_scenario.hpp>
@@ -35,6 +36,8 @@ std::vector<std::unique_ptr<score::InterfaceBase>> score_addon_pd::factories(
       FW<Process::ProcessModelFactory, Pd::ProcessFactory>,
       FW<Process::InspectorWidgetDelegateFactory, Pd::InspectorFactory>,
       FW<Process::LayerFactory, Pd::LayerFactory>,
+      FW<Library::LibraryInterface, Pd::LibraryHandler>,
+      FW<Process::ProcessDropHandler, Pd::DropHandler>,
       FW<Execution::ProcessComponentFactory, Pd::ComponentFactory>>(ctx, key);
 }
 
@@ -44,9 +47,11 @@ score_addon_pd::score_addon_pd()
   // TODO should not be necessarey
   libpd_init_audio(2, 2, 48000);
 
+  /*
   libpd_set_printhook([](const char* s) { qDebug() << "string: " << s; });
   libpd_set_floathook(
       [](const char* s, float x) { qDebug() << "float: " << s << x; });
+  */
 }
 
 auto score_addon_pd::required() const -> std::vector<score::PluginKey>
